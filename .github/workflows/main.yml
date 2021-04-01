@@ -1,0 +1,40 @@
+name: Continous Integration
+on:
+  push:
+    paths-ignore:
+      - '**.md'
+
+jobs:
+  build:
+    name: build
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-18.04]
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v2
+
+      - name: Cache dependencies (Unix)
+        uses: actions/cache@v1
+        if: matrix.os != 'windows-2019'
+        with:
+          path: ~/.stack
+          key: ${{ runner.os }}-store-${{ hashFiles('stack.yaml.lock') }}-${{ hashFiles('gdt.cabal') }}
+
+      - name: Build generator
+        run:  stack build
+
+      - name: Package generator
+        shell: bash
+        run: |
+          mkdir package
+          dir=$(stack path --dist-dir)/build/gdt
+          [[ -e "$dir/gdt-server" ]] && cp "$dir/gdt-server" ../package/gdt-server
+          cd ..
+          cp -r package/
+      - name: Upload artifact
+        uses: actions/upload-artifact@v1
+        with:
+          name: gdt-server
+          path: package
