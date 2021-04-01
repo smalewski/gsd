@@ -1,7 +1,10 @@
+{-# LANGUAGE DeriveGeneric #-}
 module Interpreter.Syntax.Common where
 
 import Interpreter.Span
 import Data.Text (Text, unpack)
+import Data.Aeson (FromJSON)
+import GHC.Generics (Generic)
 
 -- | Constants
 data Lit = LInt Int | LString String
@@ -76,3 +79,10 @@ instance HasSpan Pattern where
   span (CtorP sp _ _)  = sp
 --  span (ArityP sp _ _) = sp
   span (DefP sp)       = sp
+
+data Valid
+  = Sound
+  | Exact
+  | Complete
+  deriving (Eq, Show, Generic)
+instance FromJSON Valid

@@ -10,6 +10,8 @@ import Interpreter.Span (Span)
 import Interpreter.Syntax.Common
 import Interpreter.Type
 import Debug.Trace (trace)
+import Data.Set (Set)
+import qualified Data.Set as S
 
 
 -- * Consistent lifting of functions
@@ -67,10 +69,65 @@ parg (DefP sp') = pure []
 -- * Consistent lifting of predicates
 
 -- | Validity of match expression
-valid :: (Monoid acc, Monad bot) => Valid -> [Pattern] -> Type -> EnvM bot env acc err ()
-valid Sound ps t = pass
-valid Exact ps t = pass
-valid Complete ps t = pass
+valid :: (IsError err, Monoid acc, Monad bot) => Valid -> [Pattern] -> Type -> EnvM bot env acc err ()
+valid Exact ps t
+  | hasDefP ps = valid Sound ps t
+
+valid Complete ps t
+  | hasDefP ps = pass
+
+-- Exact without default case, or Sound
+valid v ps t = do
+  cssTy <- ctorsPerType t
+  let csP = S.fromList $ concatMap pctor ps
+      isValid = case v of
+            Sound    -> any (csP `S.isSubsetOf`) cssTy
+            Exact    -> csP `elem` cssTy
+            Complete -> any (`S.isSubsetOf` csP) cssTy
+  if isValid
+    then pass
+    else err $ errInvalidMatch mempty v t
+
+ctorsPerType :: (IsError err, Monoid acc, Monad bot)
+             => Type
+             -> EnvM bot env acc err [Set CtorName]
+ctorsPerType (TData sp d) = do
+  DataInfo o cs <- lookupData (Just d) >>= maybe (err $ errDataNotFound sp d) pure
+  extras <- case o of
+             Closed -> pure mempty
+             Open   -> lookupData Nothing >>= maybe (pure mempty) (pure . di_ctors)
+  pure [S.fromList $ cs <> extras]
+
+ctorsPerType (TUnclass sp) = do
+  dump <- dumpDataCtx
+  let isOpenData (Just _, DataInfo Open _) = True
+      isOpenData _                         = False
+      css = S.fromList . di_ctors . snd <$> filter isOpenData dump
+      extras = maybe mempty (S.fromList . di_ctors) $ lookup Nothing dump
+  pure (fmap (<> extras) css)
+
+ctorsPerType (TUnknData sp) = do
+  dump <- dumpDataCtx
+  let isOpenData (Just _, DataInfo Open _) = True
+      isOpenData _                         = False
+      isClosedData (Just _, DataInfo Closed _) = True
+      isClosedData _                           = False
+      opens = S.fromList . di_ctors . snd <$> filter isOpenData dump
+      closeds = S.fromList . di_ctors . snd <$> filter isClosedData dump
+      extras = maybe mempty (S.fromList . di_ctors) $ lookup Nothing dump
+  pure $ closeds <> fmap (<> extras) opens
+
+ctorsPerType (TUnkn sp) = ctorsPerType (TUnknData sp)
+ctorsPerType _ = pure []
+
+hasDefP :: [Pattern] -> Bool
+hasDefP []            = False
+hasDefP (DefP _ : _) = True
+hasDefP (_ : ps)     = hasDefP ps
+
+pctor :: Pattern -> [CtorName]
+pctor (CtorP _ c _) = [c]
+pctor (DefP  _)     = []
 
 satisfyLabels :: (IsError err, Monoid acc, Monad bot) => Span -> CtorName -> [LabelName] -> EnvM bot env acc err ()
 satisfyLabels sp c ls = do

@@ -8,7 +8,7 @@ import Servant
 import Interpreter.Syntax.EvCore (Expr)
 import Data.Text (Text)
 import GHC.Generics (Generic)
-import Interpreter.Env (Valid(..))
+import Interpreter.Syntax.Common (Valid(..))
 
 type API = "eval" :> ReqBody '[JSON] SourceCode :> Post '[JSON] Response
       :<|> "check" :> ReqBody '[JSON] SourceCode :> Post '[JSON] Response

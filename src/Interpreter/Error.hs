@@ -15,6 +15,7 @@ class IsError a where
   errConsistency :: Span -> Type -> Type -> a
   errLabelNotConsistent :: Span -> LabelName ->  Type -> a
   errInvalidLabels :: Span -> CtorName -> a
+  errInvalidMatch :: Span -> Valid -> Type -> a
   errImposible :: a
 
 -- | Type checking errors
@@ -39,6 +40,8 @@ data Error
   | LabelNotConsistentError Span LabelName Type
   -- | Invalid labels from constructor
   | InvalidLabelsError Span CtorName
+  -- | Invalid match
+  | InvalidMatchError Span Valid Type
   -- | No open datatype in context
   | NoOpenDataError Span
   -- | No datatype in context
@@ -82,6 +85,8 @@ instance ErrorTxt Error where
     = (Just s, tErr, "Types for label $" <> ppr l <> "$ in type $" <> ppr t <> "$ are not consistent.")
   errorTxt (InvalidLabelsError s c)
     = (Just s, tErr, "Labels for constructor $" <> ppr c <> "$ do not match the definition.")
+  errorTxt (InvalidMatchError s v t)
+    = (Just s, tErr, "Invalid match: Patterns are not $" <> ppr v <> "$ with respect to $" <> ppr t <> "$.")
   errorTxt (NoOpenDataError s) = (Just s, tErr, "Unclassified data is used, but no open datatype is defined.")
   errorTxt (NoDataError s) = (Just s, tErr, "A constructor is applied, but no datatype is defined.")
   errorTxt (MatchTypesError s) = (Just s, tErr, "The types of the branches.")
@@ -95,6 +100,7 @@ instance IsError Error where
   errConsistency        = ConsistencyError
   errLabelNotConsistent = LabelNotConsistentError
   errInvalidLabels      = InvalidLabelsError
+  errInvalidMatch       = InvalidMatchError
   errImposible          = ImposibleError
 
 instance HasSpan Error where

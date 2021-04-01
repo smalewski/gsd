@@ -17,7 +17,7 @@ import qualified Interpreter.Eval as Eval
 import Debug.Trace (trace)
 import Control.Monad.Except (ExceptT, runExceptT, MonadIO (liftIO), withExceptT)
 import Control.Monad.Trans.Except (ExceptT(ExceptT))
-import Interpreter.Env (Valid)
+import Interpreter.Syntax.Common (Valid)
 
 data ErrorLevel = PError | Error | Warning
 

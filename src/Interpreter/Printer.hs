@@ -30,6 +30,11 @@ braces x = "{" <> x <> "}"
 sepBy :: Printable a => Text -> [a] -> Text
 sepBy sep = intercalate sep . fmap ppr
 
+instance Printable Valid where
+  ppr Sound = "\\mathsf{Sound}"
+  ppr Exact = "\\mathsf{Exact}"
+  ppr Complete = "\\mathsf{Complete}"
+
 instance Printable Name where
   ppr (Name _ d) = "\\mathit" <> braces d
 
@@ -131,3 +136,4 @@ instance Printable C.Expr where
   needParens C.Asc {} = True
   needParens C.BinOp {} = True
   needParens _ = False
+

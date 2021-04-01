@@ -3,7 +3,6 @@
 
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE DeriveGeneric #-}
 module Interpreter.Env where
 
 import Control.Monad (foldM)
@@ -16,8 +15,6 @@ import Interpreter.Syntax
 import Interpreter.Type
 import Control.Monad.Writer
 import Data.List (foldl')
-import Data.Aeson (FromJSON)
-import GHC.Generics (Generic)
 import Debug.Trace (trace)
 
 data DataInfo = DataInfo
@@ -37,13 +34,6 @@ data Env a = Env
     varCtx :: Map Name a
   }
   deriving (Eq, Show)
-
-data Valid
-  = Sound
-  | Exact
-  | Complete
-  deriving (Generic)
-instance FromJSON Valid
 
 newtype EnvM bot env acc err a = EnvM
   { runEnvM :: ReaderT (Env env) (WriterT acc  (ExceptT err bot)) a
