@@ -31,8 +31,6 @@ jobs:
           mkdir package
           dir=$(stack path --dist-dir)/build/gdt
           [[ -e "$dir/gdt-server" ]] && cp "$dir/gdt-server" ../package/gdt-server
-          cd ..
-          cp -r package/
       - name: Upload artifact
         uses: actions/upload-artifact@v1
         with:
