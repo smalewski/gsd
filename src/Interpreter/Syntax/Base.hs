@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE DeriveTraversable #-}
 module Interpreter.Syntax.Base where
 
 import Prelude hiding (span)
@@ -30,12 +32,15 @@ data Expr
   -- | Binary operator
   | BinOp Span BinOp Expr Expr
   -- | Let binding
---  | Let Span [(Span, Name, Expr)] Expr
+  | Let Span [LetBinding Expr] Expr
   -- | Field access
   | Access Span Expr LabelName
   -- | If expression
   | Ite Span Expr Expr Expr
   deriving (Eq, Show)
+
+data LetBinding a = LetBinding { lbSpan :: Span, lbName :: Name, lbType :: Type, lbExpr :: a }
+  deriving (Eq, Show, Functor, Foldable, Traversable)
 
 -- | Cases of a match expression
 data Case = Case { casePattern :: Pattern, caseExpr :: Expr }
@@ -51,7 +56,7 @@ instance HasSpan Expr where
   span (CtorPos sp _ _) = sp
   span (Match sp _ _)   = sp
   span (BinOp sp _ _ _) = sp
---  span (Let sp _ _)   = sp
+  span (Let sp _ _)     = sp
   span (Access sp _ _)  = sp
   span (Ite sp _ _ _)   = sp
 
@@ -100,6 +105,7 @@ findCtors (Match _ e cs) = findCtors e <> concatMap findCtorsCase cs
 findCtors (BinOp _ _ e1 e2) = concatMap findCtors [e1, e2]
 findCtors (Access _ e _) = findCtors e
 findCtors (Ite _ e2 e3 e4) = concatMap findCtors [e2, e3, e4]
+findCtors (Let _ bs e) = concatMap (findCtors . lbExpr) bs <> findCtors e
 
 findCtorsCase :: Case -> [FoundCtor]
 findCtorsCase (Case p e) = findCtorsPat p <> findCtors e

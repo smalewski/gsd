@@ -46,7 +46,7 @@ term = lexeme term' <?> "expression"
     term' = ifP
         <|> matchP
         <|> lamP
-        --  <|> letP
+        <|> letP
         <|> try applyOrCtorPosP
         <|> baseExprP
 
@@ -132,7 +132,6 @@ lamP = withLineFold $ do
 varP :: Parser Expr
 varP = uncurry Var <$> withSpan nameP
 
-{-
 letP :: Parser Expr
 letP = do
   (startPos, bindings) <- withLineFold $ do
@@ -140,7 +139,7 @@ letP = do
     keyword "let"
     indentation <- L.indentLevel
     let declP' = withIndent indentation declP <?> "let binding"
-    decls <- lexeme declP' `sepBy1` whitespace'
+    decls <- lexeme' declP' `sepBy1` whitespace'
     pure (startPos, decls)
   e <- withLineFold $ (keyword "in" <?> inLabel) *> parser
   pure $ Let (startPos .> span e) bindings e
@@ -148,11 +147,11 @@ letP = do
     inLabel = "properly indented let binding or 'in' keyword"
     declP = withLineFold $ do
       startPos <- getOffset
-      x <- Name <$> identifier
+      x <- nameP
+      t <- option (TUnkn mempty) (txt ":" *> Type.parser)
       void . lexeme' $ char '='
       body <- parser
-      pure $ (startPos .> span body, x, body)
--}
+      pure $ LetBinding (startPos .> span body) x t body
 
 ctorP :: Parser Expr
 ctorP = do

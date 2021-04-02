@@ -19,6 +19,7 @@ import Debug.Trace (trace)
 import Data.IORef
 import Data.Map.Strict (fromList)
 import Control.Monad.IO.Class (liftIO)
+import Data.Functor (($>))
 
 type State = (Expr, Env Value, Kont)
 
@@ -63,7 +64,7 @@ eval env = removeDupSteps . evalEnvMIO env . go 0 . inject env
   where
     go :: Int -> State -> EvalM Expr
     go n s@(e, env, k)
-      | n > 1000  || isFinal s = tell [applyKont k e] *> pure (applyKont k e)
+      | n > 1000  || isFinal s = tell [applyKont k e] $> applyKont k e
       | otherwise             = step s >>= go (n + 1)
 
     removeDupSteps  = (fmap . fmap . fmap) removeDupSteps'

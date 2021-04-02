@@ -64,6 +64,11 @@ desugarExpr (Access sp e l) = do
 desugarExpr (Asc sp e ty) = do
   e' <- desugarExpr e
   pure $ C.Asc sp e' ty
+desugarExpr (Let sp bs e) = do
+  e'  <- desugarExpr e
+  bs' <- (mapM . mapM) desugarExpr bs
+  pure $ foldr (\(LetBinding sp x t e) acc -> C.App sp (C.Lam sp x t acc) e) e' bs'
+
 
 desugarArg :: (Span, LabelName, Expr) -> DesugarM C.CtorArg
 desugarArg (sp, l, e) = C.CtorArg sp l <$> desugarExpr e
