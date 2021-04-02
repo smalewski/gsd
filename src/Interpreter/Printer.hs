@@ -23,7 +23,7 @@ class Printable a where
 t1 <+> t2 = t1 <> "~" <> t2
 
 parens :: Text -> Text
-parens x = "\\parens{" <> x <> "}"
+parens x = "(" <> x <> ")"
 
 ascMaybeParens :: Printable a => a -> Text
 ascMaybeParens x
