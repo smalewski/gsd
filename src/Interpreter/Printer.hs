@@ -15,14 +15,20 @@ class Printable a where
   needParens _ = False
 
   maybeParens :: a -> Text
-  maybeParens x | needParens x = parens $ ppr x
-                | otherwise     = ppr x
+  maybeParens x
+    | needParens x = parens $ ppr x
+    | otherwise    = ppr x
 
 (<+>) :: Text -> Text -> Text
 t1 <+> t2 = t1 <> "~" <> t2
 
 parens :: Text -> Text
-parens x = "(" <> x <> ")"
+parens x = "\\parens{" <> x <> "}"
+
+ascMaybeParens :: Printable a => a -> Text
+ascMaybeParens x
+  | needParens x = "\\ascParens" <> braces (ppr x)
+  | otherwise    = ppr x
 
 braces :: Text -> Text
 braces x = "{" <> x <> "}"
@@ -31,8 +37,8 @@ sepBy :: Printable a => Text -> [a] -> Text
 sepBy sep = intercalate sep . fmap ppr
 
 instance Printable Valid where
-  ppr Sound = "\\mathsf{Sound}"
-  ppr Exact = "\\mathsf{Exact}"
+  ppr Sound    = "\\mathsf{Sound}"
+  ppr Exact    = "\\mathsf{Exact}"
   ppr Complete = "\\mathsf{Complete}"
 
 instance Printable Name where
@@ -52,12 +58,12 @@ instance Printable TBase where
   ppr TString = "\\mathsf{String}"
 
 instance Printable Type where
-  ppr (TBase _ t) = ppr t
+  ppr (TBase _ t)    = ppr t
   ppr (TArr _ t1 t2) = maybeParens t1 <+> "\\rightarrow " <+> ppr t2
-  ppr (TData _ n) = ppr n
-  ppr (TUnkn _) = "\\mathsf{?}"
-  ppr (TUnknData _) = "\\mathsf{?_D}"
-  ppr (TUnclass _) = "\\mathsf{?_U}"
+  ppr (TData _ n)    = ppr n
+  ppr (TUnkn _)      = "\\mathsf{?}"
+  ppr (TUnknData _)  = "\\mathsf{?_D}"
+  ppr (TUnclass _)   = "\\mathsf{?_U}"
 
   needParens TArr {} = True
   needParens _ = False
@@ -78,10 +84,10 @@ instance Printable Pattern where
   ppr (DefP _) = "\\_"
 
 instance Printable BinOp where
-  ppr Plus = "+"
+  ppr Plus  = "+"
   ppr Minus = "-"
   ppr Times = "*"
-  ppr Div = "/"
+  ppr Div   = "/"
   ppr Equal = "="
 
 instance Printable CtorArg where
@@ -93,13 +99,13 @@ instance Printable Expr where
   ppr (App e1 e2@App{}) = maybeParens e1 <+> parens (ppr e2)
   ppr (App e1 e2) = maybeParens e1 <+> maybeParens e2
   ppr (Lam x t e) = "\\lambda " <> ppr x <> ":" <> ppr t <> "." <> ppr e
-  ppr (Asc ev e t) = ppr ev <+> maybeParens e <+> ":" <+> ppr t
+  ppr (Asc ev e t) = "\\ascription{" <> ppr ev <> "}{" <> ascMaybeParens e <> "}{" <> ppr t <> "}"
   ppr (Ctor c args) = ppr c <+> "\\{" <> sepBy ",~" args <> "\\}"
   ppr (Match e cs)
     = "\\mathsf{match}" <+> ppr e <+> "\\mathsf{with}" <+> braces (sepBy ";~" cs)
   ppr (BinOp bop e1 e2) = maybeParens e1 <+> ppr bop <+> maybeParens e2
   ppr (Access e l _) = maybeParens e <> "." <> ppr l
-  ppr (Value ev e t) = ppr ev <+> maybeParens e <+> ":" <+> ppr t
+  ppr (Value ev e t) = ppr (Asc ev e t)
   ppr (Clos x tx e _) = ppr (Lam x tx e)
   ppr (Highlight e) = "\\boxed" <> braces (ppr e)
 
