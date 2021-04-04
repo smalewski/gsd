@@ -4,4 +4,4 @@ import Server (app)
 import Network.Wai.Handler.Warp (run)
 
 main :: IO ()
-main = run 8000 app
+main = run 8001 app
