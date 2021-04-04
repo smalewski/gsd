@@ -135,7 +135,7 @@ step (v0@(Value ev2 u t2), _, k0@(KFun (Value ev1 (Clos x tx e env) (TArr _ t11 
 -- R-Delta
 step (v0@(Value ev2 u2 t2), env, k0@(KBinOpR bop (Value ev1 u1 t1) k)) =
   do
-    let (_, _, t) = binOpType bop t1
+    let (_, _, t) = binOpType bop
         ev = Evidence t
         u = evalBinOp bop u1 u2
         v' = Value ev u t

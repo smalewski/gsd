@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings#-}
+
 module Interpreter.Check where
 
 import           Prelude hiding (span)
@@ -76,10 +78,7 @@ typecheckCase v (Case pat e) = do
   withEnv xts $ typecheckExpr v e
 
 bopType :: BinOp -> Type -> Type -> CheckM Type
-bopType Equal t1 t2 = do
-  t1 ~~ t2
-  b <- precise t1 t2
-  pure $ if b then t1 else t2
+bopType Equal _ _ = pure $ TData mempty (DataName mempty "Bool")
 bopType _ t1 t2 = do
   t1 ~~ intT
   t2 ~~ intT

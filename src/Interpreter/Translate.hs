@@ -84,8 +84,7 @@ translateExpr (Ctor sp c args) = do -- Not value
 translateExpr (BinOp sp bop e1 e2) = do
   (e1', t1') <- translateExpr e1
   (e2', t2') <- translateExpr e2
-  t12'       <- fromMaybe (TUnkn mempty) <$> meet t1' t2'
-  let (t1, t2, t) = binOpType bop t12'
+  let (t1, t2, t) = binOpType bop
   e1''       <- norm e1' t1' t1
   e2''       <- norm e2' t2' t2
   pure (Ev.BinOp bop e1'' e2'', t)

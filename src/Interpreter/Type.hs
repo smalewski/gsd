@@ -68,11 +68,12 @@ litType :: Span -> Lit -> Type
 litType sp (LInt _) = TBase sp TInt
 litType sp (LString _) = TBase sp TString
 
-binOpType :: BinOp -> Type -> (Type, Type, Type)
-binOpType Equal t =
+binOpType :: BinOp -> (Type, Type, Type)
+binOpType Equal =
   let boolTy = TData mempty $ DataName mempty "Bool"
-  in  (t, t, boolTy)
-binOpType _ _ =
+      unknTy = TUnkn mempty
+  in  (unknTy, unknTy, boolTy)
+binOpType _ =
   let intTy = TBase mempty TInt
   in (intTy, intTy, intTy)
 
