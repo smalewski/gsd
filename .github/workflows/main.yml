@@ -29,7 +29,7 @@ jobs:
         shell: bash
         run: |
           mkdir package
-          dir=$(stack path --dist-dir)/build/gdt
+          dir=$(stack path --dist-dir)/build/gdt-server
           [[ -e "$dir/gdt-server" ]] && cp "$dir/gdt-server" ../package/gdt-server
       - name: Upload artifact
         uses: actions/upload-artifact@v1
