@@ -2,7 +2,7 @@
 
 module Interpreter.Printer where
 
-import Data.Text
+import Data.Text hiding (null)
 import Interpreter.Type
 import Interpreter.Syntax.Common
 import Interpreter.Syntax.EvCore
@@ -100,7 +100,9 @@ instance Printable Expr where
   ppr (App e1 e2) = maybeParens e1 <+> maybeParens e2
   ppr (Lam x t e) = "\\lambda " <> ppr x <> ":" <> ppr t <> "." <> ppr e
   ppr (Asc ev e t) = "\\ascription{" <> ppr ev <> "}{" <> ascMaybeParens e <> "}{" <> ppr t <> "}"
-  ppr (Ctor c args) = ppr c <+> "\\{" <> sepBy ",~" args <> "\\}"
+  ppr (Ctor c args)
+    | null args = ppr c
+    | otherwise = ppr c <+> "\\{" <> sepBy ",~" args <> "\\}"
   ppr (Match e cs)
     = "\\mathsf{match}" <+> ppr e <+> "\\mathsf{with}" <+> braces (sepBy ";~" cs)
   ppr (BinOp bop e1 e2) = maybeParens e1 <+> ppr bop <+> maybeParens e2
@@ -134,7 +136,9 @@ instance Printable C.Expr where
   ppr (C.App _ e1 e2) = maybeParens e1 <+> maybeParens e2
   ppr (C.Lam _ x t e) = "\\lambda " <> ppr x <> ":" <> ppr t <> "." <> ppr e
   ppr (C.Asc _ e t) = maybeParens e <+> ":" <+> ppr t
-  ppr (C.Ctor _ c args) = ppr c <+> "\\{" <> sepBy ",~" args <> "\\}"
+  ppr (C.Ctor _ c args)
+    | null args = ppr c
+    | otherwise = ppr c <+> "\\{" <> sepBy ",~" args <> "\\}"
   ppr (C.Match _ e cs)
     = "\\mathsf{match}" <+> ppr e <+> "\\mathsf{with}" <+> braces (sepBy ";~" cs)
   ppr (C.BinOp _ bop e1 e2) = maybeParens e1 <+> ppr bop <+> maybeParens e2
