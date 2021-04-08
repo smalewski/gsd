@@ -1,12 +1,14 @@
 module Interpreter.Auxiliary where
 
+import Prelude hiding (span)
+
 import Control.Applicative (liftA2)
 import Control.Monad (foldM)
 import Control.Monad.Reader
 import Data.List (find, sort)
 import Interpreter.Env
 import Interpreter.Error
-import Interpreter.Span (Span)
+import Interpreter.Span (Span, span)
 import Interpreter.Syntax.Common
 import Interpreter.Type
 import Debug.Trace (trace)
@@ -40,18 +42,18 @@ cty sp c = do
 
 fty :: (IsError err, Monoid acc, Monad bot) => Span -> LabelName -> Type -> EnvM bot env acc err Type
 fty sp l t = do
-  cs <- case t of
-    TData _ d -> ctors sp d
-    TUnclass _ -> do
-      let f (_, di) = Open == di_openess di
-      openDatas <- filter f <$> dumpDataCtx
-      pure $ concatMap (di_ctors . snd) openDatas
-    TUnknData _ -> concatMap (di_ctors . snd) <$> dumpDataCtx
-    TUnkn     _ -> concatMap (di_ctors . snd) <$> dumpDataCtx
-    _ -> err $ errConsistency sp t (TUnknData mempty)
+  cs <- S.toList . S.unions <$> ctorsPerType t
   ts <- mapMaybeM (lookupCtorLabel l) cs
+  ts' <- case t of
+           TData _ d
+             | null ts -> do b <- isOpen d
+                             if b
+                               then pure [TUnkn mempty]
+                               else err $ errNoLabel sp l t
+             | otherwise -> pure ts
+           _ -> pure $ if null ts then [TUnkn mempty] else ts
   let error = err $ errLabelNotConsistent sp l t
-  equate ts >>= maybe error pure
+  equate ts' >>= maybe error pure
 
 lty :: (IsError err, Monoid acc, Monad bot) => Span -> LabelName -> CtorName -> EnvM bot env acc err Type
 lty sp l c = lookupCtorLabel l c >>= maybe (err $ errCtorNotFound sp c) pure
@@ -118,7 +120,7 @@ ctorsPerType (TUnknData sp) = do
   pure $ closeds <> fmap (<> extras) opens
 
 ctorsPerType (TUnkn sp) = ctorsPerType (TUnknData sp)
-ctorsPerType _ = pure []
+ctorsPerType t = err $ errConsistency (span t) t (TUnknData mempty)
 
 hasDefP :: [Pattern] -> Bool
 hasDefP []            = False
