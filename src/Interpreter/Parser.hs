@@ -72,7 +72,7 @@ reduceDefs ds = do
       raws  = mapMaybe fromRaw decls
   funs <- mapM (fromFunDef env') $ filter isFunDef decls
   let env'' = extendEnv env' $ fmap (\x -> TypeDef (fst x) (TUnkn mempty)) (ks <> funs)
-  pure (env'', funs, ks, raws)
+  pure (env'', funs, ks, reverse raws)
 
 fromRaw :: Def -> Maybe Expr
 fromRaw (Raw e) = Just e
