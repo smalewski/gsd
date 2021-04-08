@@ -49,8 +49,8 @@ check valid src = runExceptT $ do
 
   pure $ ResultText (eTxt, [])
 
-run :: Valid -> Text -> IO (Either ErrorText ResultText)
-run valid src = runExceptT $ do
+run :: Valid -> Bool -> Text -> IO (Either ErrorText ResultText)
+run valid trace src = runExceptT $ do
   -- Parse
   (env, fs, ks, es) <- withErr $ parseSrc src
 
@@ -74,8 +74,8 @@ run valid src = runExceptT $ do
   ks'' <- withErr $ (mapM . mapM) (translate env) ks'
 
   -- Evaluate
-  valEnv     <- withErr' $ initValEnv env fs'' ks''
-  (v, stack) <- withErrIO $ eval valEnv e'
+  valEnv     <- withErr' $ initValEnv trace env fs'' ks''
+  (v, stack) <- withErrIO $ eval trace valEnv e'
 
   -- To text
   let vTxt       = ppr v

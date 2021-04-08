@@ -28,6 +28,6 @@ data Response
   deriving (Eq, Show, Generic)
 instance ToJSON Response
 
-data SourceCode = SourceCode {sourceCode :: Text, valid :: Valid}
+data SourceCode = SourceCode {sourceCode :: Text, valid :: Valid, trace :: Bool}
   deriving (Generic)
 instance FromJSON SourceCode

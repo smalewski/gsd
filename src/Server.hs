@@ -24,10 +24,10 @@ server :: Server API
 server = evalH :<|> checkH
   where
     evalH :: SourceCode -> Handler Response
-    evalH (SourceCode src valid) = liftIO (run valid src >>= buildResponse)
+    evalH (SourceCode src valid trace) = liftIO (run valid trace src >>= buildResponse)
 
     checkH :: SourceCode -> Handler Response
-    checkH (SourceCode src valid) = liftIO (check valid src >>= buildResponse)
+    checkH (SourceCode src valid _) = liftIO (check valid src >>= buildResponse)
 
 buildResponse :: Either ErrorText ResultText -> IO Response
 buildResponse (Right (ResultText (value, stack))) = pure $ Ok (dummyJudgment value) (dummyJudgment <$> stack)
