@@ -20,6 +20,11 @@ import Data.IORef
 import Data.Map.Strict (fromList)
 import Control.Monad.IO.Class (liftIO)
 import Data.Functor (($>))
+import Data.Aeson (decode', decodeStrict', encode)
+import Data.Text.Encoding (encodeUtf8, decodeUtf8)
+import Data.Text (Text)
+import Data.ByteString.Char8 as B (concat)
+import Data.ByteString.Lazy.Char8 (toChunks)
 
 type State = (Expr, Env Value, Kont)
 
@@ -40,6 +45,8 @@ data Error
   | EAccess CtorName LabelName
   | ETrans Type Type
   | EVar Name
+  | EToJSON Expr
+  | EFromJSON Text
 
 instance ErrorTxt Error where
   errorTxt (EMatch c)
@@ -52,6 +59,10 @@ instance ErrorTxt Error where
     = (Nothing, rErr, "Consistent transitivity between $" <> ppr t1 <> "$ and $" <> ppr t2 <> "$ is not defined.")
   errorTxt (EVar n)
     = (Nothing, rErr, "Variable $" <> ppr n <> "$ is not in scope.")
+  errorTxt (EToJSON e)
+    = (Nothing, rErr, "Cannot be converted to JSON: " <> ppr e)
+  errorTxt (EFromJSON txt)
+    = (Nothing, rErr, "Cannot be converted from JSON: '" <> txt <> "'.")
 
 rErr = "Runtime Error"
 
@@ -121,6 +132,32 @@ isFinal _ = False
 step :: State -> EvalM State
 -- reduce
 
+-- FromJSON
+step (v0@(Value ev2 (Lit (LString txt)) _), env, k0@(KFun (Value ev1 FromJson (TArr _ t11 t12)) k)) =
+  do
+    let Evidence (TArr _ ev11 ev12) = ev1
+        ev = Evidence (TUnknData mempty)
+    _  <- trans ev2 (Evidence ev11)
+    ev <- trans ev (Evidence ev12)
+    case decodeStrict' $ encodeUtf8 txt of
+      Nothing -> err $ EFromJSON txt
+      Just json -> do
+        let v = Value ev json t12
+        tell [highlight k0 v0, highlight k v]
+        pure (v, env, k)
+
+-- ToJSON
+step (v0@(Value ev2 u t2), env, k0@(KFun (Value ev1 ToJson (TArr _ t11 t12)) k)) =
+  do
+    let Evidence (TArr _ ev11 ev12) = ev1
+        ev = Evidence (TBase mempty TString)
+    _   <- trans ev2 (Evidence ev11)
+    ev' <- trans ev (Evidence ev12)
+    let txt = decodeUtf8 . B.concat . toChunks $ encode u
+        v = Value ev' (Lit $ LString txt) t12
+    tell [highlight k0 v0, highlight k v]
+    pure (v, env, k)
+
 -- R-Beta
 step (v0@(Value ev2 u t2), _, k0@(KFun (Value ev1 (Clos x tx e env) (TArr _ t11 t12)) k)) =
   do
@@ -128,7 +165,7 @@ step (v0@(Value ev2 u t2), _, k0@(KFun (Value ev1 (Clos x tx e env) (TArr _ t11 
     ev <- trans ev2 (Evidence ev11)
     let v      = Value ev u tx
         newEnv = insertVar env x (Unboxed v)
-        v'     = Asc (Evidence ev12) e t2
+        v'     = Asc (Evidence ev12) e t12
     tell [highlight k0 v0, highlight k v']
     pure (v', newEnv, k)
 
@@ -157,7 +194,7 @@ step (v0@(Value ev u@(Ctor c args) t), _, k0@(KMatch cs env k)) =
       Just (Case p e) ->
         let xvs = zip (pvar p) (Unboxed . ctorArgExpr <$> args)
             newEnv = extendVarCtx env xvs
-        in  tell [highlight k0 v0, highlight k e] *> pure (e, newEnv, k)
+        in  tell [highlight k0 v0, highlight k e] $> (e, newEnv, k)
 
 -- R-Access
 step (v0@(Value ev (Ctor c args) t), _, k0@(KAccess l t' env k)) =
@@ -181,13 +218,16 @@ step (u, _, KAsc ev t env k)
 
 -- Intros
 
-step (Var x, env, k) = do
-  obj <- maybe (err $ EVar x) pure $ lookupVar' x env
-  v' <- case obj of
-          Boxed box -> liftIO $ readIORef box
-          Unboxed v -> pure v
-  tell [highlight k (Var x), highlight k v']
-  pure (v', env, k)
+step (Var x@(Name _ name), env, k) = do
+  v <- case lookupVar' x env of
+    Just (Boxed box) -> liftIO $ readIORef box
+    Just (Unboxed v) -> pure v
+    Nothing
+      | name == "fromJSON" -> pure FromJson
+      | name == "toJSON"   -> pure ToJson
+      | otherwise          -> err $ EVar x
+  tell [highlight k (Var x), highlight k v]
+  pure (v, env, k)
 
 step (App e1 e2, env, k) =
   pure (e1, env, KApp e2 env k)
@@ -232,9 +272,3 @@ evalBinOp _ _ _ = Lit (LInt (-1))
 trans :: Evidence -> Evidence -> EvalM Evidence
 trans (Evidence t1) (Evidence t2) =
   meet t1 t2 >>= maybe (err $ ETrans t1 t2) (pure . Evidence)
-
-ctorTrue :: Expr
-ctorTrue = Ctor (CtorName mempty "True") []
-
-ctorFalse :: Expr
-ctorFalse = Ctor (CtorName mempty "False") []

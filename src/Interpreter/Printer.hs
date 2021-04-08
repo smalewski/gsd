@@ -70,7 +70,7 @@ instance Printable Type where
 
 instance Printable Lit where
   ppr (LInt n) = pack $ show n
-  ppr (LString s) = "\\text{``" <> pack s <> "''}"
+  ppr (LString s) = "\\verb|\"" <> s <> "\"|"
 
 instance Printable Evidence where
   ppr (Evidence t) = braces $ "\\color{purple} \\varepsilon_{" <> ppr t <> "}"
@@ -107,6 +107,8 @@ instance Printable Expr where
   ppr (Access e l _) = maybeParens e <> "." <> ppr l
   ppr (Value ev e t) = ppr (Asc ev e t)
   ppr (Clos x tx e _) = ppr (Lam x tx e)
+  ppr ToJson = "\\mathsf{toJSON}"
+  ppr FromJson = "\\mathsf{fromJSON}"
   ppr (Highlight e) = "\\boxed" <> braces (ppr e)
 
   needParens Lam {} = True

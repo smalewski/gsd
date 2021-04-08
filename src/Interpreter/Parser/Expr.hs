@@ -14,6 +14,7 @@ import Interpreter.Type
 import Text.Megaparsec hiding (Label)
 import qualified Text.Megaparsec.Char.Lexer as L
 import Prelude hiding (span)
+import Data.Text (pack)
 
 parser :: Parser Expr
 parser = (try ascP <|> expr) <?> "expression"
@@ -67,8 +68,9 @@ litP = uncurry Lit <$> withSpan litP'
     intP = LInt <$> (try signedIntP <|> unsignedIntP)
     unsignedIntP = lexeme L.decimal
     signedIntP = betweenParens $ L.signed whitespace L.decimal
-    stringP = LString <$> stringLiteral
+    stringP = LString . pack <$> (stringLiteral <|> stringLiteral')
     stringLiteral = char '"' *> manyTill L.charLiteral (char '"')
+    stringLiteral' = char '\'' *> manyTill L.charLiteral (char '\'')
 
 ascP :: Parser Expr
 ascP = sameLine $ do

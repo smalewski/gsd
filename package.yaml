@@ -22,15 +22,18 @@ description:         Please see the README on GitHub at <https://github.com/gith
 dependencies:
 - aeson
 - base >= 4.7 && < 5
+- bytestring
 - containers
 - megaparsec
 - mtl
 - parser-combinators
+- scientific
 - servant
 - servant-options
 - servant-server
 - text
 - transformers
+- unordered-containers
 - vector
 - wai
 - wai-cors

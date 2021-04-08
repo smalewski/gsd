@@ -7,7 +7,7 @@ import Data.Aeson (FromJSON)
 import GHC.Generics (Generic)
 
 -- | Constants
-data Lit = LInt Int | LString String
+data Lit = LInt Int | LString Text
          deriving (Eq, Show)
 
 data Name = Name Span Text

@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 57bafde9f029b0e372be0dfd9fbcda7f2dfb5a02d93217dcf5803951f86ab612
+-- hash: 6541842fde33f0fc35dcf47cee31c6c7c54afcbbc50ba76956e932d6c8c5560c
 
 name:           gdt
 version:        0.1.0.0
@@ -62,15 +62,18 @@ library
   build-depends:
       aeson
     , base >=4.7 && <5
+    , bytestring
     , containers
     , megaparsec
     , mtl
     , parser-combinators
+    , scientific
     , servant
     , servant-options
     , servant-server
     , text
     , transformers
+    , unordered-containers
     , vector
     , wai
     , wai-cors
@@ -88,16 +91,19 @@ executable gdt-server
   build-depends:
       aeson
     , base >=4.7 && <5
+    , bytestring
     , containers
     , gdt
     , megaparsec
     , mtl
     , parser-combinators
+    , scientific
     , servant
     , servant-options
     , servant-server
     , text
     , transformers
+    , unordered-containers
     , vector
     , wai
     , wai-cors
@@ -116,16 +122,19 @@ test-suite gdt-test
   build-depends:
       aeson
     , base >=4.7 && <5
+    , bytestring
     , containers
     , gdt
     , megaparsec
     , mtl
     , parser-combinators
+    , scientific
     , servant
     , servant-options
     , servant-server
     , text
     , transformers
+    , unordered-containers
     , vector
     , wai
     , wai-cors

@@ -12,4 +12,6 @@ stdlib =
   "not : Bool -> Bool\n" <>
   "not b = match b with\n" <>
   "          False => True\n" <>
-  "          True  => False\n"
+  "          True  => False\n" <>
+  "fromJSON : String -> ?D\n" <>
+  "toJSON : ?D -> String\n"
