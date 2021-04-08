@@ -23,8 +23,8 @@ import Control.Monad.Identity (Identity)
 
 type CheckM = EnvM Identity Type () Error
 
-typecheck :: Valid -> Env Type -> Expr -> Either Error ()
-typecheck valid env = void . evalEnvM env . typecheckExpr valid
+typecheck :: Valid -> Env Type -> Expr -> Either Error Type
+typecheck valid env = fmap fst . evalEnvM env . typecheckExpr valid
 
 wfEnv :: Env Type -> Either Error ()
 wfEnv env = void $ evalEnvM env (wfDataCtx *> wfCtorCtx *> wfTypeCtx)

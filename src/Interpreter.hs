@@ -37,15 +37,15 @@ check valid src = runExceptT $ do
 
   -- Typecheck
   withErr $ wfEnv env
-  withErr $ mapM_ (typecheck valid env) es'
+  ts <- withErr $ mapM (typecheck valid env) es'
   withErr $ (mapM_ . mapM_) (typecheck valid env) fs'
   withErr $ (mapM_ . mapM_) (typecheck valid env) ks'
 
   -- Select the last raw expression
-  e <- ExceptT . pure . note noRawWarning $ listToMaybe es'
+  (e, t) <- ExceptT . pure . note noRawWarning . listToMaybe $ zip es' ts
 
   -- To text
-  let eTxt = ppr e
+  let eTxt = ppr e <> "~:~" <> ppr t
 
   pure $ ResultText (eTxt, [])
 
@@ -61,12 +61,12 @@ run valid trace src = runExceptT $ do
 
   -- Typecheck
   withErr $ wfEnv env
-  withErr $ mapM_ (typecheck valid env) es'
+  ts <- withErr $ mapM (typecheck valid env) es'
   withErr $ (mapM_ . mapM_) (typecheck valid env) fs'
   withErr $ (mapM_ . mapM_) (typecheck valid env) ks'
 
   -- Select the last raw expression
-  e <- ExceptT . pure . note noRawWarning $ listToMaybe es'
+  (e, t) <- ExceptT . pure . note noRawWarning . listToMaybe $ zip es' ts
 
   -- Translate
   e'   <- withErr $ translate env e
@@ -78,7 +78,7 @@ run valid trace src = runExceptT $ do
   (v, stack) <- withErrIO $ eval trace valEnv e'
 
   -- To text
-  let vTxt       = ppr v
+  let vTxt       = ppr v <> "~:~" <> ppr t
       stackTxt   = ppr <$> stack
 
   pure $ ResultText (vTxt, stackTxt)
