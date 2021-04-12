@@ -10,8 +10,8 @@ import Data.Text (Text)
 import GHC.Generics (Generic)
 import Interpreter.Syntax.Common (Valid(..))
 
-type API = "gdt" :> "api" :> "eval" :> ReqBody '[JSON] SourceCode :> Post '[JSON] Response
-      :<|> "gdt" :> "api" :> "check" :> ReqBody '[JSON] SourceCode :> Post '[JSON] Response
+type API = "gsd" :> "api" :> "eval" :> ReqBody '[JSON] SourceCode :> Post '[JSON] Response
+      :<|> "gsd" :> "api" :> "check" :> ReqBody '[JSON] SourceCode :> Post '[JSON] Response
 
 api :: Proxy API
 api = Proxy
