@@ -13,7 +13,7 @@ import Interpreter.Error (ErrorTxt(errorTxt))
 import Interpreter.Syntax.Common
 import Interpreter.Syntax.EvCore
 import Interpreter.Type
-import Control.Monad.Writer as W (tell, WriterT (runWriterT))
+import Control.Monad.Writer as W (tell, WriterT (runWriterT), execWriterT)
 import Interpreter.Printer (ppr)
 import Debug.Trace (trace)
 import Data.IORef

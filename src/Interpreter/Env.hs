@@ -55,6 +55,7 @@ evalEnvMIO env
   . flip runReaderT env
   . runEnvM
 
+
 emptyEnv :: Env a
 emptyEnv = Env mempty mempty mempty
 
@@ -117,9 +118,7 @@ lookupCtorLabel l c = do
   pure $ cinfo >>= lookup l . argTypes
 
 err :: (Monoid acc, Monad bot) => err -> EnvM bot env acc err a
-err e = do
-  env <- ask
-  trace (show $ dataCtx env ) $ trace (show $ ctorCtx env) $ throwError e
+err e = throwError e
 
 pass :: Monad m => m ()
 pass = pure ()
