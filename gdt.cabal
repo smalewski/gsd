@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 6541842fde33f0fc35dcf47cee31c6c7c54afcbbc50ba76956e932d6c8c5560c
+-- hash: 13230e30ac4ab0bfdcb53ab9023024807b89a809fcb679cc96b798570552291f
 
 name:           gdt
 version:        0.1.0.0
@@ -33,6 +33,7 @@ library
       Interpreter.Env
       Interpreter.Error
       Interpreter.Eval
+      Interpreter.Judgment
       Interpreter.Parser
       Interpreter.Parser.Definition
       Interpreter.Parser.Definition.Data
@@ -66,6 +67,7 @@ library
     , containers
     , megaparsec
     , mtl
+    , pandoc
     , parser-combinators
     , scientific
     , servant
@@ -96,6 +98,7 @@ executable gdt-server
     , gdt
     , megaparsec
     , mtl
+    , pandoc
     , parser-combinators
     , scientific
     , servant
@@ -127,6 +130,7 @@ test-suite gdt-test
     , gdt
     , megaparsec
     , mtl
+    , pandoc
     , parser-combinators
     , scientific
     , servant
