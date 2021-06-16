@@ -8,7 +8,7 @@ import Interpreter.Parser (parseSrc, ParseError)
 import Interpreter.Syntax.Desugar (desugar)
 import Data.Bifunctor (first)
 import Interpreter.Error (errTxt, ErrorTxt (errorTxt), Error)
-import Interpreter.Printer (ppr)
+import Interpreter.Printer (ppr, preRender)
 import Interpreter.Check (wfEnv, typecheck)
 import Data.Maybe (fromMaybe, listToMaybe)
 import Interpreter.Translate (translate)
@@ -47,7 +47,7 @@ check valid src = runExceptT $ do
   -- To text
   let eTxt = ppr e <> "~:~" <> ppr t
 
-  pure $ ResultText (eTxt, [])
+  pure $ ResultText (trace (show eTxt) eTxt, [])
 
 run :: Valid -> Bool -> Text -> IO (Either ErrorText ResultText)
 run valid trace src = runExceptT $ do

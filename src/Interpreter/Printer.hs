@@ -7,6 +7,62 @@ import Interpreter.Type
 import Interpreter.Syntax.Common
 import Interpreter.Syntax.EvCore
 import qualified Interpreter.Syntax.Core as C
+import Interpreter.Env (Env(Env))
+import Text.Pandoc (readLaTeX, writeHtml5String, ReaderOptions(..), WriterOptions(..), TrackChanges (AcceptChanges), WrapOption (WrapNone), ObfuscationMethod (NoObfuscation), CiteMethod (Natbib), TopLevelDivision (TopLevelSection), ReferenceLocation (EndOfBlock), HTMLMathMethod (MathML), runPure)
+import Data.Either (fromRight)
+import Control.Monad ((<=<))
+
+preRender :: Text -> Text
+preRender x = preRender' $ "$" <> x <> "$"
+
+preRender' :: Text -> Text
+preRender' = fromRight mempty . runPure . (writeHtml5String wopts <=< readLaTeX ropts)
+  where
+    ropts :: ReaderOptions
+    ropts = ReaderOptions { readerExtensions            = mempty
+                          , readerStandalone            = False
+                          , readerColumns               = 1000
+                          , readerTabStop               = 1000
+                          , readerIndentedCodeClasses   = []
+                          , readerAbbreviations         = mempty
+                          , readerDefaultImageExtension = mempty
+                          , readerTrackChanges          = AcceptChanges
+                          , readerStripComments         = False
+                          }
+    wopts :: WriterOptions
+    wopts = WriterOptions { writerTemplate          = Nothing
+                          , writerVariables         = mempty
+                          , writerTabStop           = 1000
+                          , writerTableOfContents   = False
+                          , writerIncremental       = False
+                          , writerHTMLMathMethod    = MathML
+                          , writerNumberSections    = False
+                          , writerNumberOffset      = []
+                          , writerSectionDivs       = False
+                          , writerExtensions        = mempty
+                          , writerReferenceLinks    = False
+                          , writerDpi               = 10
+                          , writerWrapText          = WrapNone
+                          , writerColumns           = 1000
+                          , writerEmailObfuscation  = NoObfuscation
+                          , writerIdentifierPrefix  = "gsd"
+                          , writerCiteMethod        = Natbib
+                          , writerHtmlQTags         = False
+                          , writerSlideLevel        = Nothing
+                          , writerTopLevelDivision  = TopLevelSection
+                          , writerListings          = False
+                          , writerHighlightStyle    = Nothing
+                          , writerSetextHeaders     = False
+                          , writerEpubSubdirectory  = ""
+                          , writerEpubMetadata      = Nothing
+                          , writerEpubFonts         = mempty
+                          , writerEpubChapterLevel  = 0
+                          , writerTOCDepth          = 0
+                          , writerReferenceDoc      = Nothing
+                          , writerReferenceLocation = EndOfBlock
+                          , writerSyntaxMap         = mempty
+                          , writerPreferAscii       = False
+                          }
 
 class Printable a where
   ppr :: a -> Text
@@ -63,7 +119,7 @@ instance Printable Type where
   ppr (TData _ n)    = ppr n
   ppr (TUnkn _)      = "\\mathsf{?}"
   ppr (TUnknData _)  = "\\mathsf{?_D}"
-  ppr (TUnclass _)   = "\\mathsf{?_U}"
+  ppr (TUnclass _)   = "\\mathsf{?_O}"
 
   needParens TArr {} = True
   needParens _ = False
@@ -149,3 +205,8 @@ instance Printable C.Expr where
   needParens C.BinOp {} = True
   needParens _ = False
 
+instance Printable (Env a) where
+  ppr (Env dataCtx ctorCtx varCtx) =
+    let emptyCtx = "\\cdot"
+        pprCtx ctx txt = if null ctx then emptyCtx else txt
+    in pprCtx dataCtx "\\Delta" <> ";" <> pprCtx ctorCtx "\\Xi" <> ";" <> pprCtx varCtx "\\Gamma"
