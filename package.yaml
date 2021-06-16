@@ -26,7 +26,6 @@ dependencies:
 - containers
 - megaparsec
 - mtl
-- pandoc
 - parser-combinators
 - scientific
 - servant
