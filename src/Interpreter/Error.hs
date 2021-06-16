@@ -79,7 +79,7 @@ instance ErrorTxt Error where
   errorTxt (VarNotFoundError s x)
     = (Just s, tErr, "Variable $" <> ppr x <> "$ is not defined.")
   errorTxt (CtorNotFoundError s c)
-    = (Just s, tErr, "Constructor $" <> ppr c <> "$ is not defined.")
+    = (Just s, tErr, "Unclassified data constructor $" <> ppr c <> "$ cannot be instantiated positionaly.")
   errorTxt (DataNotFoundError s d)
     = (Just s, tErr, "Datatype $" <> ppr d <> "$ is not defined.")
   errorTxt (ConsistencyError s t1 t2)

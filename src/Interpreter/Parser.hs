@@ -67,7 +67,7 @@ reduceDefs ds = do
   let (defs, decls) = partition isDef ds
       env = initEnv defs
       cs  = concatMap findCtorsDef decls
-  env' <- extendEnvWithUnclass env cs
+  env' <- pure env --extendEnvWithUnclass env cs
   let ks    = mapMaybe (fromConstDef env') decls
       raws  = mapMaybe fromRaw decls
   funs <- mapM (fromFunDef env') $ filter isFunDef decls
