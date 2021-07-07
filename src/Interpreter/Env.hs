@@ -17,9 +17,8 @@ import Control.Monad.Writer
 import Data.List (foldl')
 import Debug.Trace (trace)
 
-data DataInfo = DataInfo
-  { di_openess :: Openess,
-    di_ctors :: [CtorName]
+newtype DataInfo = DataInfo
+  { di_ctors :: [CtorName]
   }
   deriving (Eq, Show)
 
@@ -29,7 +28,7 @@ newtype CtorInfo = CtorInfo
   deriving (Eq, Show)
 
 data Env a = Env
-  { dataCtx :: Map (Maybe DataName) DataInfo,
+  { dataCtx :: Map DataName DataInfo,
     ctorCtx :: Map CtorName CtorInfo,
     varCtx :: Map Name a
   }
@@ -61,7 +60,7 @@ emptyEnv = Env mempty mempty mempty
 
 -- Dump Contexts
 
-dumpDataCtx :: (Monoid acc, Monad bot) => EnvM bot env acc err [(Maybe DataName, DataInfo)]
+dumpDataCtx :: (Monoid acc, Monad bot) => EnvM bot env acc err [(DataName, DataInfo)]
 dumpDataCtx = asks (Map.assocs . dataCtx)
 
 dumpCtorCtx :: (Monoid acc, Monad bot) => EnvM bot env acc err [(CtorName, CtorInfo)]
@@ -72,7 +71,7 @@ dumpVarCtx = asks (Map.assocs . varCtx)
 
 -- Lookups
 
-lookupData :: (Monoid acc, Monad bot) => Maybe DataName -> EnvM bot env acc err (Maybe DataInfo)
+lookupData :: (Monoid acc, Monad bot) => DataName -> EnvM bot env acc err (Maybe DataInfo)
 lookupData d = asks (lookupData' d)
 
 lookupCtor :: (Monoid acc, Monad bot) => CtorName -> EnvM bot env acc err (Maybe CtorInfo)
@@ -81,7 +80,7 @@ lookupCtor c = asks (lookupCtor' c)
 lookupVar :: (Monoid acc, Monad bot) => Name -> EnvM bot env acc err (Maybe env)
 lookupVar x = asks (lookupVar' x)
 
-lookupData' :: Maybe DataName -> Env a -> Maybe DataInfo
+lookupData' :: DataName -> Env a -> Maybe DataInfo
 lookupData' d = Map.lookup d . dataCtx
 
 lookupCtor' :: CtorName -> Env a -> Maybe CtorInfo
@@ -100,10 +99,10 @@ insertCtor env c ci =
   let newCtx = alter (const $ Just ci) c $ ctorCtx env
   in Env (dataCtx env) newCtx (varCtx env)
 
-extendData :: Env a -> Maybe DataName -> CtorName -> Env a
+extendData :: Env a -> DataName -> CtorName -> Env a
 extendData env d c =
-  let extendDataInfo (Just (DataInfo o cs)) = Just $ DataInfo o (c : cs)
-      extendDataInfo Nothing                = Just $ DataInfo Open [c]
+  let extendDataInfo (Just (DataInfo cs)) = Just $ DataInfo (c : cs)
+      extendDataInfo Nothing              = Nothing
       newCtx = alter extendDataInfo d $ dataCtx env
   in Env newCtx (ctorCtx env) (varCtx env)
 
@@ -118,15 +117,16 @@ lookupCtorLabel l c = do
   pure $ cinfo >>= lookup l . argTypes
 
 err :: (Monoid acc, Monad bot) => err -> EnvM bot env acc err a
-err e = throwError e
+err = throwError
 
 pass :: Monad m => m ()
 pass = pure ()
 
-openess :: (Monoid acc, Monad bot) => DataName -> EnvM bot env acc err (Maybe Openess)
-openess d = do
-  dinfo <- lookupData (Just d)
-  pure $ di_openess <$> dinfo
+openDatatypes :: (Monoid acc, Monad bot) => EnvM bot env acc err [DataName]
+openDatatypes = asks (Map.keys . Map.filterWithKey (\k v -> isOpen k) . dataCtx)
+
+datatypes :: (Monoid acc, Monad bot) => EnvM bot env acc err [DataName]
+datatypes = asks (Map.keys . dataCtx)
 
 ctorLabels :: (Monoid acc, Monad bot) => CtorName -> EnvM bot env acc err (Maybe [LabelName])
 ctorLabels cname = do

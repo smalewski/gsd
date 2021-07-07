@@ -18,8 +18,8 @@ import qualified Text.Megaparsec.Char.Lexer as L ( lexeme, skipBlockComment
                                                  , skipLineComment, space
                                                  , indentLevel, indentGuard, nonIndented )
 import GHC.Unicode (isLower, isUpper, isDigit)
-import Interpreter.Type (DataName(DataName), Type)
-import Interpreter.Syntax.Common (LabelName(LabelName), CtorName(CtorName), Name(Name))
+import Interpreter.Type (Type)
+import Interpreter.Syntax.Common (DataName(DataName), LabelName(LabelName), CtorName(CtorName), Name(Name), Openess (Closed))
 import qualified Data.Set as Set
 import Data.List (group, sort)
 import Data.Maybe (listToMaybe)
@@ -252,7 +252,7 @@ nameP :: Parser Name
 nameP = uncurry Name <$> withSpan (lexeme identifier) <?> "identifier"
 
 dataNameP :: Parser DataName
-dataNameP = uncurry DataName <$> withSpan (lexeme capitalIdentifier) <?> "datatype"
+dataNameP = uncurry DataName <$> withSpan (lexeme capitalIdentifier) <*> pure Closed <?> "datatype"
 
 ctorNameP :: Parser CtorName
 ctorNameP = uncurry CtorName <$> withSpan (lexeme capitalIdentifier) <?> "constructor's name"

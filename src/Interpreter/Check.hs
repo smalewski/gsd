@@ -17,7 +17,7 @@ import           Interpreter.Error
 import           Interpreter.Syntax.Common
 import           Interpreter.Syntax.Core
 import qualified Interpreter.Syntax.Core as Ev
-import Interpreter.Auxiliary (cod, dom, cty, lty, satisfyLabels, valid, equate, fty, parg, meet, precise)
+import Interpreter.Auxiliary (cod, dom, cty, lty, satisfyLabels, valid, equate, fty, parg)
 import Data.Maybe (isJust)
 import Control.Monad.Identity (Identity)
 
@@ -62,7 +62,7 @@ typecheckExpr v (Match sp e cs) = do
   let pats = casePattern <$> cs
   valid v pats t
   ts <- mapM (typecheckCase v) cs
-  equate ts >>= maybe (err $ MatchTypesError sp) pure
+  maybe (err $ MatchTypesError sp) pure (equate ts)
 typecheckExpr v (BinOp sp bop e1 e2) = do
   t1 <- typecheckExpr v e1
   t2 <- typecheckExpr v e2
@@ -78,7 +78,7 @@ typecheckCase v (Case pat e) = do
   withEnv xts $ typecheckExpr v e
 
 bopType :: BinOp -> Type -> Type -> CheckM Type
-bopType Equal _ _ = pure $ TData mempty (DataName mempty "Bool")
+bopType Equal _ _ = pure $ TData mempty (DataName mempty "Bool" Closed)
 bopType _ t1 t2 = do
   t1 ~~ intT
   t2 ~~ intT
@@ -94,11 +94,9 @@ consistency (TArr _ t1 t2) (TArr _ t3 t4)
 consistency t@TUnclass{} TUnclass{} = wfT t
 consistency t1@(TData _ d) t2@TUnclass{} = do
   wfT t1
-  oss <- openess d
-  case oss of
-    Nothing     -> err $ errDataNotFound (span t1) d
-    Just Closed -> err $ errConsistency (span t1) t1 t2
-    Just Open   -> pass
+  if isOpen d
+    then pass
+    else err $ errConsistency (span t1) t1 t2
 consistency t1@TUnclass{} t2@TData{} = consistency t2 t1
 consistency TUnknData{} TUnknData{}  = pass
 consistency TUnknData{} t@TUnclass{} = wfT t
@@ -123,7 +121,7 @@ wfTypeCtx = pass
 
 wfT :: Type -> CheckM ()
 wfT (TBase _ _) = pass
-wfT (TData sp d) = wfDataCtx *> lookupData (Just d) *> pass
+wfT (TData sp d) = wfDataCtx *> lookupData d *> pass
 wfT (TArr sp t1 t2) = wfT t1 *> wfT t2
 wfT (TUnkn sp) = wfDataCtx
 wfT (TUnknData sp) = do
@@ -132,7 +130,6 @@ wfT (TUnknData sp) = do
   if null datas then err $ NoDataError sp else pass
 wfT (TUnclass sp) = do
   wfDataCtx
-  let onlyOpen (d, di) = isJust d && Open == di_openess di
-  openDatas <- filter onlyOpen <$> dumpDataCtx
+  openDatas <- filter (isOpen . fst) <$> dumpDataCtx
   if null openDatas then err $ NoOpenDataError sp else pass
 

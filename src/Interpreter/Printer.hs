@@ -51,10 +51,14 @@ instance Printable CtorName where
   ppr (CtorName _ d) = "\\mathsf" <> braces d
 
 instance Printable DataName where
-  ppr (DataName _ d) = "\\mathsf" <> braces d
+  ppr (DataName _ d o) = "\\mathsf" <> braces d <> "_" <> braces (ppr o)
 
 instance Printable LabelName where
   ppr (LabelName _ d) = "\\mathit" <> braces d
+
+instance Printable Openess where
+  ppr Open   = "O"
+  ppr Closed = "X"
 
 instance Printable TBase where
   ppr TInt    = "\\mathsf{Int}"

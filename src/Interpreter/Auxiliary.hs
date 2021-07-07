@@ -13,6 +13,7 @@ import Interpreter.Syntax.Common
 import Interpreter.Type
 import Debug.Trace (trace)
 import Data.Set (Set)
+import qualified Data.Map as Map
 import qualified Data.Set as S
 import Data.Maybe (isNothing)
 
@@ -22,7 +23,7 @@ import Data.Maybe (isNothing)
 -- | Domain
 dom :: (IsError err, Monoid acc, Monad bot) => Span -> Type -> EnvM bot env acc err Type
 dom _ (TArr _ t _) = pure t
-dom _ t@(TUnkn _) = pure t
+dom _ t@(TUnkn _)  = pure t
 dom sp t = err $ errConsistency sp t (TArr sp (TUnkn sp) (TUnkn sp))
 
 -- | Domain
@@ -32,47 +33,60 @@ cod _ t@(TUnkn _) = pure t
 cod sp t = err $ errConsistency sp t (TArr sp (TUnkn sp) (TUnkn sp))
 
 ctors :: (IsError err, Monoid acc, Monad bot) =>  Span -> DataName -> EnvM bot env acc err [CtorName]
-ctors sp d = lookupData (Just d) >>= maybe (err $ errDataNotFound sp d) (pure . di_ctors)
+ctors sp d = lookupData d >>= maybe (err $ errDataNotFound sp d) (pure . di_ctors)
 
 cty :: (IsError err, Monoid acc, Monad bot) => Span -> CtorName -> EnvM bot env acc err Type
 cty sp c = do
   delta <- dumpDataCtx
   let md = fst <$> find (\(_, dinfo) -> c `elem` di_ctors dinfo) delta
---  d <- maybe (err $ errCtorNotFound sp c) pure md
-  pure $ maybe (TUnclass mempty) (TData mempty) $ join md
+      openDs = filter isOpen $ fst <$> delta
+  case (md, openDs) of
+    (Just d, _)    -> pure $ TData mempty d
+    (Nothing, [])  -> err  $ errCtorNotFound sp c
+    (Nothing, [d]) -> pure $ TData mempty d
+    (Nothing, _)   -> pure $ TUnclass mempty
 
 fty :: (IsError err, Monoid acc, Monad bot) => Span -> LabelName -> Type -> EnvM bot env acc err Type
-fty sp l t = do
-  cs <- S.toList . S.unions <$> ctorsPerType t
-  ts <- mapMaybeM (lookupCtorLabel l) cs
-  ts' <- case t of
-           TData _ d
-             | null ts -> do b <- isOpen d
-                             if b
-                               then pure [TUnkn mempty]
-                               else err $ errNoLabel sp l t
-             | otherwise -> pure ts
-           _ -> pure $ if null ts then [TUnkn mempty] else ts
-  let error = err $ errLabelNotConsistent sp l t
-  equate ts' >>= maybe error pure
+fty sp l dt@(TData _ d)
+  | isOpen d = ifM (hasLabel sp d l)
+                 thenM meetLty
+                 elseM (pure $ TUnkn sp)
+  |otherwise = meetLty
+  where
+  meetLty' = meetList <$> (ctors sp d >>= mapM (lty sp l))
+  meetLty = meetLty' >>= maybe (err $ errNoLabel sp l dt) pure
+fty sp l (TUnclass sp') = joinList <$> (openDatatypes >>= mapM (fty sp l . TData mempty))
+fty sp l (TUnknData sp') = joinList <$> (datatypes >>= mapM (fty sp l . TData mempty))
+fty sp l (TUnkn sp') = joinList <$> (datatypes >>= mapM (fty sp l . TData mempty))
+fty sp l t = err $ errConsistency sp t (TUnknData mempty)
 
 lty :: (IsError err, Monoid acc, Monad bot) => Span -> LabelName -> CtorName -> EnvM bot env acc err Type
-lty sp l c = lookupCtorLabel l c >>= maybe (pure $ TUnkn mempty) pure --maybe (err $ errCtorNotFound sp c) pure
+lty sp l c =
+  ifM (isUnclass c)
+    thenM (pure $ TUnkn mempty)
+    elseM (fromMaybeM (err $ errNoCtorLabel sp l c) (lookupCtorLabel l c))
 
 parg :: (IsError err, Monoid acc, Monad bot)
      => Pattern
      -> EnvM bot env acc err [(Name, Type)]
 parg (CtorP sp c xs) = do
-  types <- ctorTypes c >>= maybe (pure . repeat $ TUnkn mempty) pure --maybe (err $ errCtorNotFound sp c) pure
-  pure $ zip xs types
---parg (ArityP sp name xs) = pure $ (name, TBase mempty TString) : zip xs (repeat $ TUnkn mempty)
+  ts <- ifM (isUnclass c)
+      thenM (pure . repeat $ TUnkn mempty)
+      elseM (fromMaybeM (pure []) (ctorTypes c))
+  when (length xs /= length ts) (err $ errInvalidLabels sp c)
+  pure $ zip xs ts
 parg (DefP sp') = pure []
 
+equate :: [Type] -> Maybe Type
+equate = meetList
 
 -- * Consistent lifting of predicates
 
 isUnclass :: (IsError err, Monoid acc, Monad bot) => CtorName -> EnvM bot env acc err Bool
 isUnclass c = isNothing <$> lookupCtor c
+
+singleton :: a -> [a]
+singleton x = [x]
 
 -- | Validity of match expression
 valid :: (IsError err, Monoid acc, Monad bot) => Valid -> [Pattern] -> Type -> EnvM bot env acc err ()
@@ -84,7 +98,6 @@ valid Complete ps t
 
 -- Exact without default case, or Sound
 valid v ps t = do
-  opent <- isOpenType t
   cssTy <- ctorsPerType t
   (uncs, cs) <- partitionM isUnclass $ concatMap pctor ps
   let csP = S.fromList cs
@@ -93,7 +106,7 @@ valid v ps t = do
             Exact    -> csP `elem` cssTy
             Complete -> any (`S.isSubsetOf` csP) cssTy
       noUnclass = null uncs
-  if isValid && validUnclass v noUnclass opent
+  if isValid && validUnclass v noUnclass (isOpenType t)
     then pass
     else err $ errInvalidMatch mempty v t
 
@@ -106,39 +119,16 @@ validUnclass _        _     True  = True
 validUnclass _        True  False = True
 validUnclass _        False False = False
 
-isOpenType :: (Monoid acc, Monad bot) => Type -> EnvM bot env acc err Bool
+isOpenType :: Type -> Bool
 isOpenType (TData _ d) = isOpen d
-isOpenType _ = pure True
+isOpenType t           = isUnkn t
 
 ctorsPerType :: (IsError err, Monoid acc, Monad bot)
              => Type
              -> EnvM bot env acc err [Set CtorName]
-ctorsPerType (TData sp d) = do
-  DataInfo o cs <- lookupData (Just d) >>= maybe (err $ errDataNotFound sp d) pure
-  extras <- case o of
-             Closed -> pure mempty
-             Open   -> lookupData Nothing >>= maybe (pure mempty) (pure . di_ctors)
-  pure [S.fromList $ cs <> extras]
-
-ctorsPerType (TUnclass sp) = do
-  dump <- dumpDataCtx
-  let isOpenData (Just _, DataInfo Open _) = True
-      isOpenData _                         = False
-      css = S.fromList . di_ctors . snd <$> filter isOpenData dump
-      extras = maybe mempty (S.fromList . di_ctors) $ lookup Nothing dump
-  pure (fmap (<> extras) css)
-
-ctorsPerType (TUnknData sp) = do
-  dump <- dumpDataCtx
-  let isOpenData (Just _, DataInfo Open _) = True
-      isOpenData _                         = False
-      isClosedData (Just _, DataInfo Closed _) = True
-      isClosedData _                           = False
-      opens = S.fromList . di_ctors . snd <$> filter isOpenData dump
-      closeds = S.fromList . di_ctors . snd <$> filter isClosedData dump
-      extras = maybe mempty (S.fromList . di_ctors) $ lookup Nothing dump
-  pure $ closeds <> fmap (<> extras) opens
-
+ctorsPerType (TData sp d) = maybe [] (singleton . S.fromList . di_ctors) <$> lookupData d
+ctorsPerType (TUnclass sp) = asks (fmap (S.fromList . di_ctors) . Map.elems . Map.filterWithKey (\k v -> isOpen k) . dataCtx)
+ctorsPerType (TUnknData sp) = asks (fmap (S.fromList . di_ctors) . Map.elems . dataCtx)
 ctorsPerType (TUnkn sp) = ctorsPerType (TUnknData sp)
 ctorsPerType t = err $ errConsistency (span t) t (TUnknData mempty)
 
@@ -153,47 +143,17 @@ pctor (DefP  _)     = []
 
 satisfyLabels :: (IsError err, Monoid acc, Monad bot) => Span -> CtorName -> [LabelName] -> EnvM bot env acc err ()
 satisfyLabels sp c ls = do
-  ls' <- ctorLabels c >>= maybe (pure ls) pure -- maybe (err $ errCtorNotFound sp c) pure
+  ls' <- ctorLabels c >>= maybe (pure ls) pure
   if sort ls == sort ls'
     then pure ()
     else err $ errInvalidLabels sp c
 
-isOpen :: (Monoid acc, Monad bot) => DataName -> EnvM bot env acc err Bool
-isOpen d = asks (isOpen' d)
-
-precise :: (Monoid acc, Monad bot) => Type -> Type -> EnvM bot env acc err Bool
-precise t1 t2 = asks (precise' t1 t2)
-
-meet :: (Monoid acc, Monad bot) => Type -> Type -> EnvM bot env acc err (Maybe Type)
-meet t1 t2 = asks (meet' t1 t2)
-
-equate :: (Monoid acc, Monad bot) => [Type] -> EnvM bot env acc err (Maybe Type)
-equate ts = asks (equate' ts)
-
--- Pure versions
-
-isOpen' :: DataName -> Env a -> Bool
-isOpen' d env = (Just Open ==) $ di_openess <$> lookupData' (Just d) env
-
-precise' :: Type -> Type -> Env a -> Bool
-precise' t1 t2 _ | t1 == t2 = True
-precise' _ (TUnkn _) _ = True
-precise' (TUnclass _) (TUnknData _) _ = True
-precise' (TData _ _) (TUnknData _) _ = True
-precise' (TData _ d) (TUnclass _) env = isOpen' d env
-precise' _ _ _ = False
-
-meet' :: Type -> Type -> Env a -> Maybe Type
-meet' (TArr sp1 t11 t12) (TArr sp2 t21 t22) env =
-  TArr (sp1 <> sp2) <$> meet' t11 t21 env <*> meet' t12 t22 env
-meet' t1 t2 env
-  | precise' t1 t2 env = Just t1
-  | precise' t2 t1 env = Just t2
-  | otherwise = Nothing
-
-equate' :: [Type] -> Env a -> Maybe Type
-equate' [] _ = Nothing
-equate' ts env = foldM (\t1 t2 -> meet' t1 t2 env) (TUnkn mempty) ts
+hasLabel :: (IsError err, Monoid acc, Monad bot) => Span -> DataName -> LabelName -> EnvM bot env acc err Bool
+hasLabel sp d l = do
+  ctors <- di_ctors <$> lookupData d
+  ctorsMayLs <- mapM ctorLabels ctors
+  ctorsLs <- fromMaybe [] <$> ctorsMayLs
+  pure $ any (elem l) ctorsLs
 
 -- Utils
 
@@ -211,3 +171,19 @@ partitionM f (x:xs) = do
     res <- f x
     (as,bs) <- partitionM f xs
     pure ([x | res]++as, [x | not res]++bs)
+
+ifM :: Monad m => m Bool -> () -> m a -> () -> m a -> m a
+ifM b _ t _ f = do b <- b; if b then t else f
+
+thenM :: ()
+thenM = ()
+
+elseM :: ()
+elseM = ()
+-- | Monadic generalisation of 'maybe'.
+maybeM :: Monad m => m b -> (a -> m b) -> m (Maybe a) -> m b
+maybeM n j x = maybe n j =<< x
+
+-- | Monadic generalisation of 'fromMaybe'.
+fromMaybeM :: Monad m => m a -> m (Maybe a) -> m a
+fromMaybeM n = maybeM n pure

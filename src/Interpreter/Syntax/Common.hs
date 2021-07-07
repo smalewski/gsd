@@ -13,6 +13,7 @@ data Lit = LInt Int | LString Text
 data Name = Name Span Text
 data CtorName = CtorName Span Text
 data LabelName = LabelName Span Text
+data DataName = DataName Span Text Openess
 
 instance Show Name where
   show (Name s x) = unpack x
@@ -23,6 +24,9 @@ instance Show CtorName where
 instance Show LabelName where
   show (LabelName _ x) = unpack x
 
+instance Show DataName where
+  show (DataName _ x o) = unpack x <> show o
+
 instance Eq Name where
   (Name _ x) == (Name _ y) = x == y
 
@@ -31,6 +35,9 @@ instance Eq CtorName where
 
 instance Eq LabelName where
   (LabelName _ x) == (LabelName _ y) = x == y
+
+instance Eq DataName where
+  (DataName _ x o1) == (DataName _ y o2) = x == y && o1 == o2
 
 instance Ord Name where
   compare (Name _ x) (Name _ y) = compare x y
@@ -41,6 +48,9 @@ instance Ord CtorName where
 instance Ord LabelName where
   compare (LabelName _ x) (LabelName _ y) = compare x y
 
+instance Ord DataName where
+  compare (DataName _ x _) (DataName _ y _) = compare x y
+
 instance HasSpan Name where
   span (Name s _) = s
 
@@ -49,6 +59,9 @@ instance HasSpan CtorName where
 
 instance HasSpan LabelName where
   span (LabelName s _) = s
+
+instance HasSpan DataName where
+  span (DataName s _ _) = s
 
 data Pattern
   -- | Constructor patterns
@@ -86,3 +99,7 @@ data Valid
   | Complete
   deriving (Eq, Show, Generic)
 instance FromJSON Valid
+
+
+setOpeness :: Openess -> DataName -> DataName
+setOpeness o (DataName sp d _) = DataName sp d o

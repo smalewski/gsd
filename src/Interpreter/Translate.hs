@@ -22,7 +22,7 @@ imposibleError = err ImposibleError
 
 -- | Initial evidence
 initial :: Type -> Type -> TransM Ev.Evidence
-initial t1 t2 = Ev.Evidence <$> (cantFail . asks $ meet' t1 t2)
+initial t1 t2 = Ev.Evidence <$> cantFail (pure $ meet t1 t2)
 
 -- | Normalize
 norm :: Ev.Expr -> Type -> Type -> TransM Ev.Expr
@@ -100,7 +100,7 @@ translateExpr (Match sp e cs) = do
   e''     <- norm e' t tdata
   csts    <- mapM translateCase cs
   let (_, ts) = unzip csts
-  t'      <- cantFail $ equate ts
+  t'      <- cantFail . pure $ equate ts
   cs''    <- mapM (\(c, t1) -> normCase c t1 t') csts
   pure (Ev.Match e'' cs'', t')
 

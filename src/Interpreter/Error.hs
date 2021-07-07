@@ -15,6 +15,7 @@ class IsError a where
   errConsistency :: Span -> Type -> Type -> a
   errLabelNotConsistent :: Span -> LabelName ->  Type -> a
   errNoLabel :: Span -> LabelName ->  Type -> a
+  errNoCtorLabel :: Span -> LabelName ->  CtorName -> a
   errInvalidLabels :: Span -> CtorName -> a
   errInvalidMatch :: Span -> Valid -> Type -> a
   errImposible :: a
@@ -41,6 +42,8 @@ data Error
   | LabelNotConsistentError Span LabelName Type
   -- | Type has no label
   | NoLabelError Span LabelName Type
+  -- | Constructor has no label
+  | NoCtorLabelError Span LabelName CtorName
   -- | Invalid labels from constructor
   | InvalidLabelsError Span CtorName
   -- | Invalid match
@@ -88,6 +91,8 @@ instance ErrorTxt Error where
     = (Just s, tErr, "Types for label $" <> ppr l <> "$ in type $" <> ppr t <> "$ are not consistent.")
   errorTxt (NoLabelError s l t)
     = (Just s, tErr, "Type $" <> ppr t <> "$ does not have label $" <> ppr l <> "$.")
+  errorTxt (NoCtorLabelError s l c)
+    = (Just s, tErr, "Constructor $" <> ppr c <> "$ does not have label $" <> ppr l <> "$.")
   errorTxt (InvalidLabelsError s c)
     = (Just s, tErr, "Labels for constructor $" <> ppr c <> "$ do not match the definition.")
   errorTxt (InvalidMatchError s v t)
@@ -105,6 +110,7 @@ instance IsError Error where
   errConsistency        = ConsistencyError
   errLabelNotConsistent = LabelNotConsistentError
   errNoLabel            = NoLabelError
+  errNoCtorLabel        = NoCtorLabelError
   errInvalidLabels      = InvalidLabelsError
   errInvalidMatch       = InvalidMatchError
   errImposible          = ImposibleError

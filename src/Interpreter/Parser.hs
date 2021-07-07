@@ -105,6 +105,7 @@ fromConstDef env (ConstDef name e)
     in Just (name, e')
 fromConstDef _ _ = Nothing
 
+{-
 extendEnvWithUnclass :: Env Type
   -> [FoundCtor]
   -> Either Error (Env Type)
@@ -136,6 +137,8 @@ extendEnvWithUnclass env fcs = foldlM matchArity env (sort fcs)
         Just ci
           | (length . argTypes) ci == n -> Right env
           | otherwise                   -> Left $ EArity c
+
+-}
 
 findCtorsDef :: Def -> [FoundCtor]
 findCtorsDef (FunDef _ _ e) = findCtors e

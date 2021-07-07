@@ -24,7 +24,7 @@ import qualified Interpreter.Parser.Expr as Expr
 import Text.Megaparsec.Char (newline)
 
 data Def
-  = DataDef (Maybe DataName) DataInfo [(CtorName, CtorInfo)]
+  = DataDef DataName DataInfo [(CtorName, CtorInfo)]
   | CtorDef CtorName CtorInfo
   | TypeDef Name Type
   | ConstDef Name Expr
@@ -39,7 +39,7 @@ parser = many (topLevel defP) <* whitespace <* eof
 dataDefP :: Parser Def
 dataDefP = do
   (d, di, cs) <- dataDefinitionP
-  pure $ DataDef (Just d) di cs
+  pure $ DataDef d di cs
 
 typeDefP :: Parser Def
 typeDefP = uncurry TypeDef <$> typeDeclP

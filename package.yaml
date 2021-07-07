@@ -39,6 +39,7 @@ dependencies:
 - wai-cors
 - wai-extra
 - warp
+- warp-tls
 
 library:
   source-dirs: src

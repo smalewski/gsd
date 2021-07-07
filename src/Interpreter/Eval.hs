@@ -191,7 +191,7 @@ step tell (v0@(Value ev1 u t1), _, k0@(KAsc ev2 t2 env k)) =
 
 -- R-Match
 step tell (v0@(Value ev u@(Ctor c args) t), _, k0@(KMatch cs env k)) =
-    case find (matches c . casePattern) cs of
+    case find (matches c (length args) . casePattern) cs of
       Nothing -> err $ EMatch c
       Just (Case p e) ->
         let xvs = zip (pvar p) (Unboxed . ctorArgExpr <$> args)
@@ -259,9 +259,9 @@ step _ (v, _, KCtor c vs l [] env k) =
 -- Stuck?
 step _ (x, env, _) = pure (trace "Stuck" x, env, KEmpty)
 
-matches :: CtorName -> Pattern -> Bool
-matches c (CtorP _ c' _) = c == c'
-matches _ (DefP _) = True
+matches :: CtorName -> Int -> Pattern -> Bool
+matches c n (CtorP _ c' args) = c == c' && n == length args
+matches _ _ (DefP _) = True
 
 evalBinOp :: BinOp -> Expr -> Expr -> Expr
 evalBinOp Plus (Lit (LInt n1)) (Lit (LInt n2)) = Lit (LInt $ n1 + n2)
@@ -273,4 +273,4 @@ evalBinOp _ _ _ = Lit (LInt (-1))
 
 trans :: Evidence -> Evidence -> EvalM Evidence
 trans (Evidence t1) (Evidence t2) =
-  meet t1 t2 >>= maybe (err $ ETrans t1 t2) (pure . Evidence)
+   maybe (err $ ETrans t1 t2) (pure . Evidence) (meet t1 t2)

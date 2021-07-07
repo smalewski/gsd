@@ -34,9 +34,9 @@ dataDefinitionP = withLineFold $ do
       let sep = try (whitespace' *> lexeme' (char '|'))
       cs <- sepBy ctorDefinitionP sep
       let cnames = fst <$> cs
-      pure (d, DataInfo o cnames, cs)
+      pure (setOpeness o d, DataInfo cnames, cs)
 
-    emptyDataP d o = pure (d, DataInfo o [], [])
+    emptyDataP d o = pure (setOpeness o d, DataInfo [], [])
 
 ctorDefinitionP :: Parser (CtorName, CtorInfo)
 ctorDefinitionP = do

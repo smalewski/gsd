@@ -133,7 +133,7 @@ boolValue :: Bool -> Expr
 boolValue b = let c = if b then "True" else "False"
                   cname = CtorName mempty c
                   ctor = Ctor cname []
-                  t = TData mempty (DataName mempty "Bool")
+                  t = TData mempty (DataName mempty "Bool" Closed)
                   ev = Evidence t
               in Value ev ctor t
 
