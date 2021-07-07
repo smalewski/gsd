@@ -15,7 +15,7 @@ import Debug.Trace (trace)
 import Data.Set (Set)
 import qualified Data.Map as Map
 import qualified Data.Set as S
-import Data.Maybe (isNothing)
+import Data.Maybe (isNothing, fromMaybe)
 
 
 -- * Consistent lifting of functions
@@ -150,9 +150,9 @@ satisfyLabels sp c ls = do
 
 hasLabel :: (IsError err, Monoid acc, Monad bot) => Span -> DataName -> LabelName -> EnvM bot env acc err Bool
 hasLabel sp d l = do
-  ctors <- di_ctors <$> lookupData d
-  ctorsMayLs <- mapM ctorLabels ctors
-  ctorsLs <- fromMaybe [] <$> ctorsMayLs
+  dinfo <- lookupData d
+  ctorsMayLs <- mapM ctorLabels (maybe [] di_ctors dinfo)
+  let ctorsLs = fromMaybe [] <$> ctorsMayLs
   pure $ any (elem l) ctorsLs
 
 -- Utils
