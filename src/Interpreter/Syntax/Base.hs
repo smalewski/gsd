@@ -1,11 +1,7 @@
-{-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DeriveTraversable #-}
 module Interpreter.Syntax.Base where
 
 import Prelude hiding (span)
-import Data.Map.Strict (Map)
-import qualified Data.Map.Strict as Map
-
 
 import Interpreter.Type
 import Interpreter.Syntax.Common
@@ -64,10 +60,10 @@ instance HasSpan Case where
   span (Case pat e) = span pat <> span e
 
 thd3 :: (a,b,c) -> c
-thd3 (a,b,c) = c
+thd3 (_,_,c) = c
 
 snd3 :: (a,b,c) -> b
-snd3 (a,b,c) = b
+snd3 (_,b,_) = b
 
 data FoundCtor
   = FCtor CtorName (Either Int [LabelName])
@@ -81,8 +77,8 @@ instance Ord FoundCtor where
   FPat {} <= FCtor {} = False
   (FPat c n) <= (FPat c' n') = c < c' || (c == c' && n <= n')
   (FCtor c (Left n))   <= (FCtor c' (Left n'))   = c < c' || (c == c' && n <= n')
-  (FCtor c (Left n))   <= (FCtor c' (Right ls')) = c < c'
-  (FCtor c (Right ls)) <= (FCtor c' (Left n'))   = c <= c'
+  (FCtor c (Left _))   <= (FCtor c' (Right _)) = c < c'
+  (FCtor c (Right _)) <= (FCtor c' (Left _))   = c <= c'
   (FCtor c (Right ls)) <= (FCtor c' (Right ls')) = c < c' || (c == c' && length ls <= length ls')
 
 unFoundCtor :: FoundCtor -> (CtorName, Either Int [LabelName])

@@ -8,8 +8,6 @@ import Interpreter.Syntax.Common
 import Interpreter.Syntax.EvCore
 import qualified Interpreter.Syntax.Core as C
 import Interpreter.Env (Env(Env))
-import Data.Either (fromRight)
-import Control.Monad ((<=<))
 
 class Printable a where
   ppr :: a -> Text

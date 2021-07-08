@@ -3,24 +3,20 @@
 {-# LANGUAGE TupleSections #-}
 module Interpreter.Eval where
 
-import Control.Monad.Except (runExceptT, ExceptT)
-import Control.Monad.Identity (runIdentity)
-import Control.Monad.Reader (asks, runReaderT)
+import Control.Monad.Except (ExceptT)
 import Data.List (find)
-import Interpreter.Auxiliary
 import Interpreter.Env
 import Interpreter.Error (ErrorTxt(errorTxt))
 import Interpreter.Syntax.Common
 import Interpreter.Syntax.EvCore
 import Interpreter.Type
-import Control.Monad.Writer as W (tell, WriterT (runWriterT), execWriterT)
+import qualified Control.Monad.Writer as W (tell)
 import Interpreter.Printer (ppr)
-import Debug.Trace (trace)
 import Data.IORef
 import Data.Map.Strict (fromList)
 import Control.Monad.IO.Class (liftIO)
 import Data.Functor (($>))
-import Data.Aeson (decode', decodeStrict', encode)
+import Data.Aeson (decodeStrict', encode)
 import Data.Text.Encoding (encodeUtf8, decodeUtf8)
 import Data.Text (Text)
 import Data.ByteString.Char8 as B (concat)
@@ -64,6 +60,7 @@ instance ErrorTxt Error where
   errorTxt (EFromJSON txt)
     = (Nothing, rErr, "Cannot be converted from JSON: '" <> txt <> "'.")
 
+rErr :: Text
 rErr = "Runtime Error"
 
 type CtorArgValue = CtorArg
@@ -74,8 +71,8 @@ eval :: Bool -> Env Value -> Expr -> IO (Either Error (Expr, [Expr]))
 eval trace env = removeDupSteps . evalEnvMIO env . go 0 . inject env
   where
     go :: Int -> State -> EvalM Expr
-    go n s@(e, env, k)
-      | n > 1000  || isFinal s = tell [applyKont k e] $> applyKont k e
+    go n s@(e, _, k)
+      | n > 1000 || isFinal s = tell [applyKont k e] $> applyKont k e
       | otherwise             = step tell s >>= go (n + 1)
 
     removeDupSteps  = (fmap . fmap . fmap) removeDupSteps'
@@ -100,12 +97,12 @@ initValEnv trace env funs konst = do
   pure valEnv
 
 cicleEval :: Bool -> Env Value -> (Name, Value) -> IO (Either Error ())
-cicleEval _ env (x, Unboxed e) = pure $ pure ()
-cicleEval trace env (x, Boxed box) = do
+cicleEval _ _ (_, Unboxed _) = pure $ pure ()
+cicleEval trace env (_, Boxed box) = do
   v  <- readIORef box
   eith <- eval trace env v
   case eith of
-    Left err -> pure $ Left err
+    Left err'     -> pure $ Left err'
     Right (v', _) -> pure <$> writeIORef box v'
 
 highlight :: Kont -> Expr -> Expr
@@ -135,21 +132,21 @@ step :: ([Expr] -> EvalM ()) -> State -> EvalM State
 -- reduce
 
 -- FromJSON
-step tell (v0@(Value ev2 (Lit (LString txt)) _), env, k0@(KFun (Value ev1 FromJson (TArr _ t11 t12)) k)) =
+step tell (v0@(Value ev2 (Lit (LString txt)) _), env, k0@(KFun (Value ev1 FromJson (TArr _ _ t12)) k)) =
   do
     let Evidence (TArr _ ev11 ev12) = ev1
         ev = Evidence (TUnknData mempty)
     _  <- trans ev2 (Evidence ev11)
-    ev <- trans ev (Evidence ev12)
+    ev' <- trans ev (Evidence ev12)
     case decodeStrict' $ encodeUtf8 txt of
       Nothing -> err $ EFromJSON txt
       Just json -> do
-        let v = Value ev json t12
+        let v = Value ev' json t12
         tell [highlight k0 v0, highlight k v]
         pure (v, env, k)
 
 -- ToJSON
-step tell (v0@(Value ev2 u t2), env, k0@(KFun (Value ev1 ToJson (TArr _ t11 t12)) k)) =
+step tell (v0@(Value ev2 u _), env, k0@(KFun (Value ev1 ToJson (TArr _ _ t12)) k)) =
   do
     let Evidence (TArr _ ev11 ev12) = ev1
         ev = Evidence (TBase mempty TString)
@@ -161,7 +158,7 @@ step tell (v0@(Value ev2 u t2), env, k0@(KFun (Value ev1 ToJson (TArr _ t11 t12)
     pure (v, env, k)
 
 -- R-Beta
-step tell (v0@(Value ev2 u t2), _, k0@(KFun (Value ev1 (Clos x tx e env) (TArr _ t11 t12)) k)) =
+step tell (v0@(Value ev2 u _), _, k0@(KFun (Value ev1 (Clos x tx e env) (TArr _ _ t12)) k)) =
   do
     let Evidence (TArr _ ev11 ev12) = ev1
     ev <- trans ev2 (Evidence ev11)
@@ -172,7 +169,7 @@ step tell (v0@(Value ev2 u t2), _, k0@(KFun (Value ev1 (Clos x tx e env) (TArr _
     pure (v', newEnv, k)
 
 -- R-Delta
-step tell (v0@(Value ev2 u2 t2), env, k0@(KBinOpR bop (Value ev1 u1 t1) k)) =
+step tell (v0@(Value _ u2 _), env, k0@(KBinOpR bop (Value _ u1 _) k)) =
   do
     let (_, _, t) = binOpType bop
         ev = Evidence t
@@ -182,7 +179,7 @@ step tell (v0@(Value ev2 u2 t2), env, k0@(KBinOpR bop (Value ev1 u1 t1) k)) =
     pure (v', env, k)
 
 -- R-AscErase
-step tell (v0@(Value ev1 u t1), _, k0@(KAsc ev2 t2 env k)) =
+step tell (v0@(Value ev1 u _), _, k0@(KAsc ev2 t2 env k)) =
     do
       ev <- trans ev1 ev2
       let v' = Value ev u t2
@@ -190,7 +187,7 @@ step tell (v0@(Value ev1 u t1), _, k0@(KAsc ev2 t2 env k)) =
       pure (v', env, k)
 
 -- R-Match
-step tell (v0@(Value ev u@(Ctor c args) t), _, k0@(KMatch cs env k)) =
+step tell (v0@(Value _ (Ctor c args) _), _, k0@(KMatch cs env k)) =
     case find (matches c (length args) . casePattern) cs of
       Nothing -> err $ EMatch c
       Just (Case p e) ->
@@ -199,9 +196,9 @@ step tell (v0@(Value ev u@(Ctor c args) t), _, k0@(KMatch cs env k)) =
         in  tell [highlight k0 v0, highlight k e] $> (e, newEnv, k)
 
 -- R-Access
-step tell (v0@(Value ev (Ctor c args) t), _, k0@(KAccess l t' env k)) =
+step tell (v0@(Value _ (Ctor c args) _), _, k0@(KAccess l t' env k)) =
     case find ((l ==) . ctorArgLabel) args of
-      Just (CtorArg _ (Value evk uk tk)) -> do
+      Just (CtorArg _ (Value evk uk _)) -> do
         ev' <- trans evk (Evidence t')
         let v' = Value ev' uk t'
         tell [highlight k0 v0, highlight k v']
@@ -257,7 +254,7 @@ step _ (v, _, KCtor c vs l [] env k) =
   pure (Ctor c (reverse (CtorArg l v : vs)), env, k)
 
 -- Stuck?
-step _ (x, env, _) = pure (trace "Stuck" x, env, KEmpty)
+step _ (x, env, _) = pure (x, env, KEmpty)
 
 matches :: CtorName -> Int -> Pattern -> Bool
 matches c n (CtorP _ c' args) = c == c' && n == length args

@@ -6,7 +6,6 @@ import Control.Monad (void)
 import Control.Monad.Combinators.Expr
 import Interpreter.Parser.Helpers
 import Interpreter.Span
-import Interpreter.Syntax.Common
 import Interpreter.Type
 import Text.Megaparsec
 import Prelude hiding (span)

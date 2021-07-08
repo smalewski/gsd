@@ -16,7 +16,7 @@ data LabelName = LabelName Span Text
 data DataName = DataName Span Text Openess
 
 instance Show Name where
-  show (Name s x) = unpack x
+  show (Name _ x) = unpack x
 
 instance Show CtorName where
   show (CtorName _ x) = unpack x
@@ -49,7 +49,7 @@ instance Ord LabelName where
   compare (LabelName _ x) (LabelName _ y) = compare x y
 
 instance Ord DataName where
-  (<=) (DataName _ x o) (DataName _ y o') = x <= y
+  (<=) (DataName _ x o) (DataName _ y o') = x <= y && o <= o'
 
 instance HasSpan Name where
   span (Name s _) = s

@@ -7,7 +7,7 @@ import Prelude hiding (span)
 import Interpreter.Span
 import Interpreter.Syntax.Common
 import Interpreter.Type
-import Data.Text (Text, pack)
+import Data.Text (Text)
 import Interpreter.Printer (ppr)
 
 class IsError a where
@@ -76,7 +76,7 @@ data Error
 
 errTxt :: ErrorTxt a => a -> (Text, Text)
 errTxt x
-  = let (ms, title, msg) = errorTxt x
+  = let (_, title, msg) = errorTxt x
       --  s = maybe "" (\s -> showSpan s <> ": ") ms
         s = ""
     in (title, "\\text{" <> s <> msg <> "}")
@@ -117,7 +117,9 @@ instance ErrorTxt Error where
   errorTxt (NoDataError s) = (Just s, tErr, "A constructor is applied, but no datatype is defined.")
   errorTxt (MatchTypesError s) = (Just s, tErr, "The types of the branches.")
   errorTxt ImposibleError = (Nothing, "Imposible", "Imposible")
+  errorTxt _ = errorTxt ImposibleError
 
+tErr :: Text
 tErr = "Type Error"
 
 instance IsError Error where

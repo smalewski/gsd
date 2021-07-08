@@ -7,7 +7,6 @@ import Prelude hiding (span)
 import Interpreter.Type
 import Interpreter.Span
 import Interpreter.Env
-import Control.Monad.Reader
 import Interpreter.Auxiliary
 import Interpreter.Error
 import Data.Maybe (fromMaybe)
@@ -17,7 +16,7 @@ type TransM = EnvM Identity Type () Error
 
 -- * Auxiliary functions
 
-imposibleError :: TransM Error
+imposibleError :: TransM a
 imposibleError = err ImposibleError
 
 -- | Initial evidence
@@ -34,16 +33,6 @@ norm e@Ev.Asc{} t1 t2
 norm e t1 t2 = do
     ev' <- initial t1 t2
     pure $ Ev.Asc ev' e t2
-
-{-
--- | Normalize
-norm :: Ev.Expr -> Type -> Type -> TransM Ev.Expr
-norm e t1 t2
-  | t1 == t2 = pure e
-  | otherwise = do
-    ev' <- initial t1 t2
-    pure $ Ev.Asc ev' e t2
--}
 
 -- | Types to data
 todata :: Type -> TransM Type
@@ -73,7 +62,7 @@ translateExpr (App sp e1 e2) = do
   e1'' <- norm e1' t1 (TArr (span t1) t11 t12)
   e2'' <- norm e2' t2 t11
   pure (Ev.App e1'' e2'', t12)
-translateExpr (Asc sp e t) = do
+translateExpr (Asc _ e t) = do
   (e', t') <- translateExpr e
   ev <- initial t' t
   pure (Ev.Asc ev e' t, t)
@@ -81,7 +70,7 @@ translateExpr (Ctor sp c args) = do -- Not value
   t     <- cty sp c
   args' <- mapM (translateCtorArg c) args
   pure (Ev.Ctor c args', t)
-translateExpr (BinOp sp bop e1 e2) = do
+translateExpr (BinOp _ bop e1 e2) = do
   (e1', t1') <- translateExpr e1
   (e2', t2') <- translateExpr e2
   let (t1, t2, t) = binOpType bop
@@ -94,7 +83,7 @@ translateExpr (Access sp e l) = do
   tdata    <- todata t'
   e''      <- norm e' t' tdata
   pure (Ev.Access e'' l t, t)
-translateExpr (Match sp e cs) = do
+translateExpr (Match _ e cs) = do
   (e', t) <- translateExpr e
   tdata   <- todata t
   e''     <- norm e' t tdata
@@ -103,6 +92,7 @@ translateExpr (Match sp e cs) = do
   t'      <- cantFail . pure $ equate ts
   cs''    <- mapM (\(c, t1) -> normCase c t1 t') csts
   pure (Ev.Match e'' cs'', t')
+translateExpr _ = imposibleError -- Just to supress the incomplete matches warning.
 
 translateCtorArg :: CtorName -> CtorArg -> TransM Ev.CtorArg
 translateCtorArg c (CtorArg sp l e) = do
@@ -129,4 +119,4 @@ translateValue (Ctor sp c args) = do
   t     <- cty sp c
   args' <- mapM (translateCtorArg c) args
   pure (Ev.Ctor c args', t)
-translateValue _ = err ImposibleError
+translateValue _ = imposibleError

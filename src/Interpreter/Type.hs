@@ -2,7 +2,6 @@
 
 module Interpreter.Type where
 
-import Data.Text (Text, unpack)
 import Interpreter.Span
 import Interpreter.Syntax.Common
 
@@ -23,12 +22,12 @@ data Type
   deriving (Ord)
 
 instance Show Type where
-  show (TBase s t2)   = show t2
-  show (TArr s t2 t3) = show t2 <> " -> " <> show t3
-  show (TData s d)    = show d
-  show (TUnkn s)      = "?"
-  show (TUnknData s)  = "?D"
-  show (TUnclass s)   = "?U"
+  show (TBase _ t2)   = show t2
+  show (TArr _ t2 t3) = show t2 <> " -> " <> show t3
+  show (TData _ d)    = show d
+  show (TUnkn _)      = "?"
+  show (TUnknData _)  = "?D"
+  show (TUnclass _)   = "?U"
 
 -- | Base types
 data TBase = TInt | TString

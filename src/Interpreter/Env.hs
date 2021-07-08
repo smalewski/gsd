@@ -5,17 +5,15 @@
 {-# LANGUAGE FlexibleInstances #-}
 module Interpreter.Env where
 
-import Control.Monad (foldM)
 import Control.Monad.Except
 import Control.Monad.Identity
 import Control.Monad.Reader
-import Data.Map (Map, singleton, alter)
+import Data.Map (Map, alter)
 import qualified Data.Map.Strict as Map
 import Interpreter.Syntax
 import Interpreter.Type
 import Control.Monad.Writer
 import Data.List (foldl', find)
-import Debug.Trace (trace, traceShow)
 
 newtype DataInfo = DataInfo
   { di_ctors :: [CtorName]

@@ -1,31 +1,25 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-{-# LANGUAGE TupleSections #-}
 module Interpreter.Parser where
 
 import Prelude hiding (span)
-import Data.Map.Strict (Map, singleton, fromList)
+import Data.Map.Strict (singleton, fromList)
 import qualified Data.Map.Strict as Map
 import Interpreter.Env
 import Interpreter.Parser.Helpers hiding (ParseError)
 import Interpreter.Syntax.Common
 import Interpreter.Type
-import qualified Interpreter.Parser.Definition.Data as DefData
 import Data.Text (Text, pack)
 import Data.Bifunctor (first)
-import Text.Megaparsec (errorBundlePretty, parse, runParserT, pos1, customFailure)
+import Text.Megaparsec (errorBundlePretty, runParserT, pos1)
 import Control.Monad.Reader (runReader)
 import Interpreter.Syntax.Base
 import Interpreter.Parser.Definition
-import Control.Monad (join, void)
 import Data.Maybe (mapMaybe, fromMaybe)
-import Data.List (sortOn, partition, sort, foldl', find)
+import Data.List (partition, foldl', find)
 import Interpreter.Span (span)
 import Interpreter.Error (ErrorTxt(errorTxt))
-import Interpreter.Printer (ppr)
-import Data.Foldable (foldlM)
 import Interpreter.Stdlib (stdlib)
-import Debug.Trace (traceShow)
 
 type Result = (Env Type, [(Name, Expr)], [(Name, Expr)], [Expr])
 
@@ -125,7 +119,7 @@ fromFunDef env (FunDef name xs e) = do
   let e'  = Lam (span t') xts e
       e'' = Asc (span e) e' t'
   Right (name, e'')
-fromFunDef _ _ = Right (Name mempty "LOL", Var mempty (Name mempty "LOL"))
+fromFunDef _ _ = Right (Name mempty "", Var mempty (Name mempty ""))
 
 varsTypes :: [(Name, Type)]
   -> [Name]
@@ -143,41 +137,6 @@ fromConstDef env (ConstDef name e)
         e' = Asc (span e) e t'
     in Just (name, e')
 fromConstDef _ _ = Nothing
-
-{-
-extendEnvWithUnclass :: Env Type
-  -> [FoundCtor]
-  -> Either Error (Env Type)
-extendEnvWithUnclass env fcs = foldlM matchArity env (sort fcs)
-  where
-    insertUnclass :: Env a -> CtorName -> [LabelName] -> Env a
-    insertUnclass env c ls = let cinfo = CtorInfo $ zip ls (repeat $ TUnkn mempty)
-                                 env'  = insertCtor env c cinfo
-                             in extendData env' Nothing c
-
-    matchArity :: Env Type -> FoundCtor -> Either Error (Env Type)
-    matchArity env (FCtor c norls) =
-      case (lookupCtor' c env, norls) of
-        (Nothing, Left n)   -> Left  $ EPosUnclass c
-        (Nothing, Right ls) -> Right $ insertUnclass env c ls
-        (Just ci, Left n)
-          | (length . argTypes) ci == n -> Right env
-          | otherwise                   -> Left $ EArity c
-        (Just ci, Right ls)
-          | sort ls == sort (fmap fst . argTypes $ ci) -> Right env
-          | otherwise                                  -> Left $ ELabels c
-
-    matchArity env (FPat c n) =
-      case lookupCtor' c env of
-        Nothing -> let CtorName sp txt = c
-                       lns             = [ txt <> pack (show i) | i <- [1..n] ]
-                       ls              = LabelName sp <$> lns
-                   in Right $ insertUnclass env c ls
-        Just ci
-          | (length . argTypes) ci == n -> Right env
-          | otherwise                   -> Left $ EArity c
-
--}
 
 findCtorsDef :: Def -> [FoundCtor]
 findCtorsDef (FunDef _ _ e) = findCtors e

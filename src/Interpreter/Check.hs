@@ -15,7 +15,6 @@ import Interpreter.Auxiliary (cod, dom, cty, lty, satisfyLabels, valid, equate, 
 import Control.Monad.Identity (Identity)
 import qualified Data.Set as S
 import Data.Maybe (fromMaybe)
-import Debug.Trace (traceShowM)
 
 type CheckM = EnvM Identity Type () Error
 
