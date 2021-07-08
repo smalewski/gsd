@@ -3,7 +3,6 @@ module Interpreter.Auxiliary where
 import Prelude hiding (span)
 
 import Control.Applicative (liftA2)
-import Control.Monad (foldM)
 import Control.Monad.Reader
 import Data.List (find, sort)
 import Interpreter.Env
@@ -11,13 +10,11 @@ import Interpreter.Error
 import Interpreter.Span (Span, span)
 import Interpreter.Syntax.Common
 import Interpreter.Type
-import Debug.Trace (trace)
 import Data.Set (Set)
 import qualified Data.Map as Map
 import qualified Data.Set as S
 import Data.Maybe (isNothing, fromMaybe, catMaybes)
 
-import Debug.Trace (traceShow)
 
 -- * Consistent lifting of functions
 
@@ -100,7 +97,7 @@ valid :: (IsError err, Monoid acc, Monad bot) => Valid -> [Pattern] -> Type -> E
 valid Exact ps t
   | hasDefP ps = valid Sound ps t
 
-valid Complete ps t
+valid Complete ps _
   | hasDefP ps = pass
 
 -- Exact without default case, or Sound
@@ -133,9 +130,9 @@ isOpenType t           = isUnkn t
 ctorsPerType :: (IsError err, Monoid acc, Monad bot)
              => Type
              -> EnvM bot env acc err [Set CtorName]
-ctorsPerType (TData sp d) = maybe [] (singleton . S.fromList . di_ctors) <$> lookupData d
-ctorsPerType (TUnclass sp) = asks (fmap (S.fromList . di_ctors) . Map.elems . Map.filterWithKey (\k v -> isOpen k) . dataCtx)
-ctorsPerType (TUnknData sp) = asks (fmap (S.fromList . di_ctors) . Map.elems . dataCtx)
+ctorsPerType (TData _ d) = maybe [] (singleton . S.fromList . di_ctors) <$> lookupData d
+ctorsPerType (TUnclass _) = asks (fmap (S.fromList . di_ctors) . Map.elems . Map.filterWithKey (\k _ -> isOpen k) . dataCtx)
+ctorsPerType (TUnknData _) = asks (fmap (S.fromList . di_ctors) . Map.elems . dataCtx)
 ctorsPerType (TUnkn sp) = ctorsPerType (TUnknData sp)
 ctorsPerType t = err $ errConsistency (span t) t (TUnknData mempty)
 
@@ -156,7 +153,7 @@ satisfyLabels sp c ls = do
     else err $ errInvalidLabels sp c
 
 hasLabel :: (IsError err, Monoid acc, Monad bot) => Span -> DataName -> LabelName -> EnvM bot env acc err Bool
-hasLabel sp d l = do
+hasLabel _ d l = do
   dinfo <- lookupData d
   ctorsMayLs <- mapM ctorLabels (maybe [] di_ctors dinfo)
   let ctorsLs = fromMaybe [] <$> ctorsMayLs
@@ -173,14 +170,14 @@ cantFail :: (IsError err, Monoid acc, Monad bot) => EnvM bot env acc err (Maybe 
 cantFail m = m >>= maybe (err errImposible) pure
 
 partitionM :: Monad m => (a -> m Bool) -> [a] -> m ([a], [a])
-partitionM f [] = pure ([], [])
+partitionM _ [] = pure ([], [])
 partitionM f (x:xs) = do
     res <- f x
     (as,bs) <- partitionM f xs
     pure ([x | res]++as, [x | not res]++bs)
 
 ifM :: Monad m => m Bool -> () -> m a -> () -> m a -> m a
-ifM b _ t _ f = do b <- b; if b then t else f
+ifM b _ t _ f = do b' <- b; if b' then t else f
 
 thenM :: ()
 thenM = ()

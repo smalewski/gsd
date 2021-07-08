@@ -21,11 +21,14 @@ import Interpreter.Auxiliary (cod, dom, cty, lty, satisfyLabels, valid, equate, 
 import Data.Maybe (isJust)
 import Control.Monad.Identity (Identity)
 import Debug.Trace (traceM)
+import qualified Data.Set as S
 
 type CheckM = EnvM Identity Type () Error
 
 typecheck :: Valid -> Env Type -> Expr -> Either Error Type
-typecheck valid env = fmap fst . evalEnvM env . typecheckExpr valid
+typecheck valid' env e = do
+  wfEnv env
+  fmap fst . evalEnvM env $ typecheckExpr valid' e
 
 wfEnv :: Env Type -> Either Error ()
 wfEnv env = void $ evalEnvM env (wfDataCtx *> wfCtorCtx *> wfTypeCtx)
@@ -88,49 +91,67 @@ bopType _ t1 t2 = do
     intT = TBase mempty TInt
 
 consistency :: Type -> Type -> CheckM ()
-consistency (TBase _ b1) (TBase _ b2) | b1 == b2 = pass
-consistency t@(TData _ d1) (TData _ d2) | d1 == d2 = wfT t
-consistency (TArr _ t1 t2) (TArr _ t3 t4)
-  = consistency t1 t3 >> consistency t2 t4
-consistency t@TUnclass{} TUnclass{} = wfT t
-consistency t1@(TData _ d) t2@TUnclass{} = do
-  wfT t1
-  if isOpen d
-    then pass
-    else err $ errConsistency (span t1) t1 t2
-consistency t1@TUnclass{} t2@TData{} = consistency t2 t1
-consistency TUnknData{} TUnknData{}  = pass
-consistency TUnknData{} t@TUnclass{} = wfT t
-consistency t@TUnclass{} TUnknData{} = wfT t
-consistency t@TData{} TUnknData{}    = wfT t
-consistency TUnknData{} t@TData{}    = wfT t
-consistency TUnkn{} t                = wfT t
-consistency t TUnkn{}                = wfT t
+consistency (TBase _ b1)   (TBase _ b2) | b1 == b2 = pass
+consistency (TData _ d1)   (TData _ d2) | d1 == d2 = pass
+consistency (TData _ d)    TUnclass{}  | isOpen d = pass
+consistency TUnclass{}     (TData _ d) | isOpen d = pass
+consistency (TArr _ t1 t2) (TArr _ t3 t4) = consistency t1 t3 >> consistency t2 t4
+consistency TUnclass{}     TUnclass{}  = pass
+consistency TUnknData{}    TUnknData{} = pass
+consistency TUnknData{}    TUnclass{}  = pass
+consistency TUnclass{}     TUnknData{} = pass
+consistency TData{}        TUnknData{} = pass
+consistency TUnknData{}    TData{}     = pass
+consistency TUnkn{}        _           = pass
+consistency _              TUnkn{}     = pass
 consistency t1 t2 = err $ errConsistency (span t1 <> span t2) t1 t2
 
 (~~) :: Type -> Type -> CheckM ()
 (~~) = consistency
 
 wfDataCtx :: CheckM ()
-wfDataCtx = pass
+wfDataCtx = do
+  dns <- fmap (S.fromList . di_ctors <$>) <$> dumpDataCtx
+  let mDup = dupData $ fst <$> dns
+  maybe pass (err . errDuplicatedData) mDup
+  let ctorSets = snd <$> dns
+      allCtors = S.unions ctorSets
+  when (sum (S.size <$> ctorSets) /= S.size allCtors) (err errDuplicatedCtor)
+
+dupData :: [DataName] -> Maybe DataName
+dupData []  = Nothing
+dupData [_] = Nothing
+dupData ((DataName _ d1 _) : x@(DataName _ d2 _) : xs)
+  | d1 == d2  = Just x
+  | otherwise = dupData (x:xs)
 
 wfCtorCtx :: CheckM ()
-wfCtorCtx = pass
+wfCtorCtx = do
+  wfDataCtx
+  ltss <- fmap (argTypes <$>) <$> dumpCtorCtx
+  mapM_ (uncurry wfCtor) ltss
+
+wfCtor :: CtorName -> [(LabelName, Type)] -> CheckM ()
+wfCtor c lts = do
+  let ls = fst <$> lts
+      ts = snd <$> lts
+      labelSet = S.fromList ls
+      sp = span c
+  when (S.size labelSet /= length lts) (err $ errDuplicatedLabels c)
+  d   <- cty (span c) c
+  ts' <- mapM (\l -> fty sp l d) ls
+  zipWithM_ (~~) ts ts'
 
 wfTypeCtx :: CheckM ()
-wfTypeCtx = pass
+wfTypeCtx = do
+  wfCtorCtx
+  ts <- fmap snd <$> dumpVarCtx
+  mapM_ wfT ts
 
 wfT :: Type -> CheckM ()
 wfT (TBase _ _) = pass
-wfT (TData sp d) = wfDataCtx *> lookupData d *> pass
-wfT (TArr sp t1 t2) = wfT t1 *> wfT t2
-wfT (TUnkn sp) = wfDataCtx
-wfT (TUnknData sp) = do
-  wfDataCtx
-  datas <- dumpDataCtx
-  if null datas then err $ NoDataError sp else pass
-wfT (TUnclass sp) = do
-  wfDataCtx
-  openDatas <- filter (isOpen . fst) <$> dumpDataCtx
-  if null openDatas then err $ NoOpenDataError sp else pass
-
+wfT (TData _ d) = wfDataCtx *> lookupData d *> pass
+wfT (TArr _ t1 t2) = wfT t1 *> wfT t2
+wfT (TUnkn _) = wfDataCtx
+wfT (TUnknData _) = wfDataCtx
+wfT (TUnclass _) = wfDataCtx

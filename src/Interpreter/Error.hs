@@ -3,6 +3,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 module Interpreter.Error where
 
+import Prelude hiding (span)
 import Interpreter.Span
 import Interpreter.Syntax.Common
 import Interpreter.Type
@@ -18,6 +19,9 @@ class IsError a where
   errNoCtorLabel :: Span -> LabelName ->  CtorName -> a
   errInvalidLabels :: Span -> CtorName -> a
   errInvalidMatch :: Span -> Valid -> Type -> a
+  errDuplicatedData :: DataName -> a
+  errDuplicatedCtor :: a
+  errDuplicatedLabels :: CtorName -> a
   errImposible :: a
 
 -- | Type checking errors
@@ -60,6 +64,12 @@ data Error
   | RuntimeMatchError
   -- | Runtime Access error
   | RuntimeAccessError
+  -- | Duplicated data declaration
+  | DuplicatedDataError Span DataName
+  -- | Duplicated ctor declaration
+  | DuplicatedCtorError
+  -- | Duplicated labels in ctor declaration
+  | DuplicatedLabelError CtorName
   -- | Imposible
   | ImposibleError
   deriving (Eq, Show)
@@ -97,6 +107,12 @@ instance ErrorTxt Error where
     = (Just s, tErr, "Labels for constructor $" <> ppr c <> "$ do not match the definition.")
   errorTxt (InvalidMatchError s v t)
     = (Just s, tErr, "Invalid match: Patterns are not $" <> ppr v <> "$ with respect to $" <> ppr t <> "$.")
+  errorTxt (DuplicatedDataError s d)
+    = (Just s, tErr, "Duplicated datatype definition: There two datatypes with the name $" <> ppr d <> "$.")
+  errorTxt DuplicatedCtorError
+    = (Just mempty, tErr, "Duplicated constructor definitions.")
+  errorTxt (DuplicatedLabelError c)
+    = (Just $ span c, tErr, "Duplicated labels in constructor definition: Constructor $"<> ppr c <> "$ have duplicated labels.")
   errorTxt (NoOpenDataError s) = (Just s, tErr, "Unclassified data is used, but no open datatype is defined.")
   errorTxt (NoDataError s) = (Just s, tErr, "A constructor is applied, but no datatype is defined.")
   errorTxt (MatchTypesError s) = (Just s, tErr, "The types of the branches.")
@@ -113,6 +129,9 @@ instance IsError Error where
   errNoCtorLabel        = NoCtorLabelError
   errInvalidLabels      = InvalidLabelsError
   errInvalidMatch       = InvalidMatchError
+  errDuplicatedData     = \d -> DuplicatedDataError (span d) d
+  errDuplicatedCtor     = DuplicatedCtorError
+  errDuplicatedLabels   = DuplicatedLabelError
   errImposible          = ImposibleError
 
 instance HasSpan Error where

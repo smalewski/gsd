@@ -49,7 +49,7 @@ instance Ord LabelName where
   compare (LabelName _ x) (LabelName _ y) = compare x y
 
 instance Ord DataName where
-  compare (DataName _ x _) (DataName _ y _) = compare x y
+  (<=) (DataName _ x o) (DataName _ y o') = x <= y && o <= o'
 
 instance HasSpan Name where
   span (Name s _) = s
@@ -78,7 +78,7 @@ pvar (CtorP _ _ xs)  = xs
 pvar (DefP _)        = []
 
 data Openess = Open | Closed
-  deriving (Eq, Show)
+  deriving (Eq, Show, Ord)
 
 data BinOp
   = Plus
