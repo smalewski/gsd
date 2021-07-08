@@ -14,16 +14,16 @@ import           Interpreter.Syntax.Core
 import Interpreter.Auxiliary (cod, dom, cty, lty, satisfyLabels, valid, equate, fty, parg)
 import Control.Monad.Identity (Identity)
 import qualified Data.Set as S
+import Data.Maybe (fromMaybe)
+import Debug.Trace (traceShowM)
 
 type CheckM = EnvM Identity Type () Error
 
 typecheck :: Valid -> Env Type -> Expr -> Either Error Type
-typecheck valid' env e = do
-  wfEnv env
-  fmap fst . evalEnvM env $ typecheckExpr valid' e
+typecheck valid' env = fmap fst . evalEnvM env . typecheckExpr valid'
 
 wfEnv :: Env Type -> Either Error ()
-wfEnv env = void $ evalEnvM env (wfDataCtx *> wfCtorCtx *> wfTypeCtx)
+wfEnv env = void $ evalEnvM env wfTypeCtx
 
 typecheckExpr :: Valid -> Expr -> CheckM Type
 typecheckExpr _ (Var sp x) =
@@ -131,8 +131,13 @@ wfCtor c lts = do
       sp = span c
   when (S.size labelSet /= length lts) (err $ errDuplicatedLabels c)
   d   <- cty (span c) c
-  ts' <- mapM (\l -> fty sp l d) ls
-  zipWithM_ (~~) ts ts'
+  ts' <- mapM (\l -> errorMaybeH errHandler $ fty sp l d) ls
+  let ts'' = fromMaybe (TUnkn mempty) <$> ts'
+  zipWithM_ (~~) ts ts''
+
+errHandler :: Error -> CheckM (Maybe a)
+errHandler e@LabelNotConsistentError{} = err e
+errHandler _ = pure Nothing
 
 wfTypeCtx :: CheckM ()
 wfTypeCtx = do
@@ -140,10 +145,18 @@ wfTypeCtx = do
   ts <- fmap snd <$> dumpVarCtx
   mapM_ wfT ts
 
+-- wfDataCtx was already checked, no need to recheck it
 wfT :: Type -> CheckM ()
 wfT (TBase _ _) = pass
-wfT (TData _ d) = wfDataCtx *> lookupData d *> pass
+wfT (TData _ d) = existsData d
 wfT (TArr _ t1 t2) = wfT t1 *> wfT t2
-wfT (TUnkn _) = wfDataCtx
-wfT (TUnknData _) = wfDataCtx
-wfT (TUnclass _) = wfDataCtx
+wfT (TUnkn _) = pass
+wfT (TUnknData _) = pass
+wfT (TUnclass _) = pass
+
+existsData :: DataName -> CheckM ()
+existsData d = do
+  env <- dumpDataCtx
+  if any ((== d) . fst) env
+    then pass
+    else err $ errDataNotFound (span d) d

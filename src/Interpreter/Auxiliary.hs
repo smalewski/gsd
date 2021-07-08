@@ -14,6 +14,7 @@ import Data.Set (Set)
 import qualified Data.Map as Map
 import qualified Data.Set as S
 import Data.Maybe (isNothing, fromMaybe, catMaybes)
+import Debug.Trace (traceShowM, traceShow)
 
 
 -- * Consistent lifting of functions
@@ -39,10 +40,10 @@ cty sp c = do
   let md = fst <$> find (\(_, dinfo) -> c `elem` di_ctors dinfo) delta
       openDs = filter isOpen $ fst <$> delta
   case (md, openDs) of
-    (Just d, _)    -> pure $ TData mempty d
+    (Just d, _)    -> pure $ TData sp d
     (Nothing, [])  -> err  $ errCtorNotFound sp c
-    (Nothing, [d]) -> pure $ TData mempty d
-    (Nothing, _)   -> pure $ TUnclass mempty
+    (Nothing, [d]) -> pure $ TData sp d
+    (Nothing, _)   -> pure $ TUnclass sp
 
 fty :: (IsError err, Monoid acc, Monad bot) => Span -> LabelName -> Type -> EnvM bot env acc err Type
 fty sp l dt@(TData _ d)
@@ -51,12 +52,18 @@ fty sp l dt@(TData _ d)
                  elseM (pure $ TUnkn sp)
   |otherwise = meetLty
   where
-  meetLty' = meetList . catMaybes <$> (ctors sp d >>= mapM (errorMaybe . lty sp l))
-  meetLty  = meetLty' >>= maybe (err $ errNoLabel sp l dt) pure
+  meetLty  = do
+    ltypes <- catMaybes <$> (ctors sp d >>= mapM (errorMaybe . lty sp l))
+    meetLty' <- ifEmpty (err $ errNoLabel sp l dt) (pure . meetList) ltypes
+    maybe (err $ errLabelNotConsistent sp l dt) pure meetLty'
 fty sp l (TUnclass sp') = joinFty sp sp' l openDatatypes
 fty sp l (TUnknData sp') = joinFty sp sp' l datatypes
 fty sp l (TUnkn sp') = fty sp l (TUnknData sp')
 fty sp _ t = err $ errConsistency sp t (TUnknData sp)
+
+ifEmpty :: b -> ([a] -> b) -> [a] -> b
+ifEmpty z _ [] = z
+ifEmpty _ f xs = f xs
 
 joinFty :: (IsError err, Monoid acc, Monad bot)
         => Span -> Span -> LabelName

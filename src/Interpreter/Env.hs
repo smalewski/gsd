@@ -123,7 +123,7 @@ pass :: Monad m => m ()
 pass = pure ()
 
 openDatatypes :: (Monoid acc, Monad bot) => EnvM bot env acc err [DataName]
-openDatatypes = asks (Map.keys . Map.filterWithKey (\k v -> isOpen k) . dataCtx)
+openDatatypes = asks (Map.keys . Map.filterWithKey (\k _ -> isOpen k) . dataCtx)
 
 datatypes :: (Monoid acc, Monad bot) => EnvM bot env acc err [DataName]
 datatypes = asks (Map.keys . dataCtx)
@@ -151,3 +151,6 @@ withEnv mp comp = do
 
 errorMaybe :: (MonadError e m) => m a -> m (Maybe a)
 errorMaybe ma = (Just <$> ma) `catchError` (\ _ -> pure Nothing)
+
+errorMaybeH :: (MonadError e m) => (e -> m (Maybe a)) -> m a -> m (Maybe a)
+errorMaybeH f ma = (Just <$> ma) `catchError` f
