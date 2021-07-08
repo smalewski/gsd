@@ -5,22 +5,14 @@ module Interpreter.Check where
 import           Prelude hiding (span)
 
 import           Control.Monad
-import           Control.Monad.Trans.Except
-import           Control.Monad.Trans.Reader
-import           Data.Function (on)
-import           Data.List (sort, unzip4)
-
 import           Interpreter.Type
 import           Interpreter.Span
 import           Interpreter.Env
 import           Interpreter.Error
 import           Interpreter.Syntax.Common
 import           Interpreter.Syntax.Core
-import qualified Interpreter.Syntax.Core as Ev
 import Interpreter.Auxiliary (cod, dom, cty, lty, satisfyLabels, valid, equate, fty, parg)
-import Data.Maybe (isJust)
 import Control.Monad.Identity (Identity)
-import Debug.Trace (traceM)
 import qualified Data.Set as S
 
 type CheckM = EnvM Identity Type () Error
