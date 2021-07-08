@@ -1,10 +1,12 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveDataTypeable #-}
 module Interpreter.Syntax.Common where
 
 import Interpreter.Span
 import Data.Text (Text, unpack)
 import Data.Aeson (FromJSON)
 import GHC.Generics (Generic)
+import Data.Data (Data)
 
 -- | Constants
 data Lit = LInt Int | LString Text
@@ -97,7 +99,7 @@ data Valid
   = Sound
   | Exact
   | Complete
-  deriving (Eq, Show, Generic)
+  deriving (Eq, Show, Generic, Data)
 instance FromJSON Valid
 
 
