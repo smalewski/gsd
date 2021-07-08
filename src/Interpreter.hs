@@ -26,34 +26,25 @@ newtype ResultText = ResultText (Text, [Text])
 
 check :: Valid -> Text -> IO (Either ErrorText ResultText)
 check valid src = runExceptT $ do
-  traceM "Preparser"
   -- Parse
   (env, fs, ks, es) <- withErr $ parseSrc src
-  traceM "Postparser"
 
   -- Desugar
   es' <- withErr $ mapM (desugar env) es
   fs' <- withErr $ (mapM . mapM) (desugar env) fs
   ks' <- withErr $ (mapM . mapM) (desugar env) ks
-  traceM "Postdesugar"
 
   -- Typecheck
   withErr $ wfEnv env
-  traceM "WF"
   ts <- withErr $ mapM (typecheck valid env) es'
-  traceM "PostTypecheck Expr"
   withErr $ (mapM_ . mapM_) (typecheck valid env) fs'
-  traceM "PostTypecheck Funs"
   withErr $ (mapM_ . mapM_) (typecheck valid env) ks'
-  traceM "PostTypecheck Ks"
 
   -- Select the last raw expression
   (e, t) <- ExceptT . pure . note noRawWarning . listToMaybe $ zip es' ts
 
-  traceM "Preprint"
   -- To text
   let eTxt = ppr e <> "~:~" <> ppr t
-  traceM "Postprint"
 
   pure $ ResultText (trace (show eTxt) eTxt, [])
 
