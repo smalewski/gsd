@@ -25,6 +25,7 @@ import Interpreter.Error (ErrorTxt(errorTxt))
 import Interpreter.Printer (ppr)
 import Data.Foldable (foldlM)
 import Interpreter.Stdlib (stdlib)
+import Debug.Trace (traceShow)
 
 type Result = (Env Type, [(Name, Expr)], [(Name, Expr)], [Expr])
 
@@ -69,11 +70,17 @@ getDeclOpeness d@(DataName _ _ o) = maybe o openess . find (sameName d) . Map.ke
     openess (DataName _ _ o') = o'
 
 initOpeness :: Result -> Result
-initOpeness (env, xs, fs, es) = ( replT <$> env
+initOpeness (env, xs, fs, es) = ( replEnv env
                                 , fmap replE <$> xs
                                 , fmap replE <$> fs
                                 , replE <$> es)
   where
+  replCInfo :: CtorInfo -> CtorInfo
+  replCInfo (CtorInfo lts) = CtorInfo $ (fmap . fmap) replT lts
+
+  replEnv :: Env Type -> Env Type
+  replEnv (Env dctx cctx vctx) = Env dctx (replCInfo <$> cctx) (replT <$> vctx)
+
   replT :: Type -> Type
   replT (TData s d) = TData s $ setOpeness (getDeclOpeness d env) d
   replT (TArr s t1 t2) = TArr s (replT t1) (replT t2)

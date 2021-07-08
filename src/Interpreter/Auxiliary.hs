@@ -11,7 +11,7 @@ import Interpreter.Span (Span, span)
 import Interpreter.Syntax.Common
 import Interpreter.Type
 import Data.Set (Set)
-import qualified Data.Map as Map
+import qualified Data.Map.Strict as Map
 import qualified Data.Set as S
 import Data.Maybe (isNothing, fromMaybe, catMaybes)
 import Debug.Trace (traceShowM, traceShow)
@@ -111,12 +111,15 @@ valid Complete ps _
 valid v ps t = do
   cssTy <- ctorsPerType t
   (uncs, cs) <- partitionM isUnclass $ concatMap pctor ps
+  traceShowM (uncs, cs)
+  traceShowM cssTy
   let csP = S.fromList cs
       isValid = case v of
             Sound    -> any (csP `S.isSubsetOf`) cssTy
             Exact    -> csP `elem` cssTy
             Complete -> any (`S.isSubsetOf` csP) cssTy
       noUnclass = null uncs
+  traceShowM (isValid, noUnclass)
   if isValid && validUnclass v noUnclass (isOpenType t)
     then pass
     else err $ errInvalidMatch mempty v t

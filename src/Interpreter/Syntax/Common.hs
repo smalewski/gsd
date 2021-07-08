@@ -49,7 +49,7 @@ instance Ord LabelName where
   compare (LabelName _ x) (LabelName _ y) = compare x y
 
 instance Ord DataName where
-  (<=) (DataName _ x o) (DataName _ y o') = x <= y && o <= o'
+  (<=) (DataName _ x o) (DataName _ y o') = x <= y
 
 instance HasSpan Name where
   span (Name s _) = s

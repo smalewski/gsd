@@ -14,8 +14,8 @@ import qualified Data.Map.Strict as Map
 import Interpreter.Syntax
 import Interpreter.Type
 import Control.Monad.Writer
-import Data.List (foldl')
-import Debug.Trace (trace)
+import Data.List (foldl', find)
+import Debug.Trace (trace, traceShow)
 
 newtype DataInfo = DataInfo
   { di_ctors :: [CtorName]
@@ -72,7 +72,9 @@ dumpVarCtx = asks (Map.assocs . varCtx)
 -- Lookups
 
 lookupData :: (Monoid acc, Monad bot) => DataName -> EnvM bot env acc err (Maybe DataInfo)
-lookupData d = asks (lookupData' d)
+lookupData d = do -- asks (lookupData' d)
+  env <- dumpDataCtx
+  pure (snd <$> find ((== d) . fst) env)
 
 lookupCtor :: (Monoid acc, Monad bot) => CtorName -> EnvM bot env acc err (Maybe CtorInfo)
 lookupCtor c = asks (lookupCtor' c)
