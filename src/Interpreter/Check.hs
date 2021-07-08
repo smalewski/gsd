@@ -20,6 +20,7 @@ import qualified Interpreter.Syntax.Core as Ev
 import Interpreter.Auxiliary (cod, dom, cty, lty, satisfyLabels, valid, equate, fty, parg)
 import Data.Maybe (isJust)
 import Control.Monad.Identity (Identity)
+import Debug.Trace (traceM)
 
 type CheckM = EnvM Identity Type () Error
 
@@ -33,17 +34,17 @@ typecheckExpr :: Valid -> Expr -> CheckM Type
 typecheckExpr _ (Var sp x) =
   lookupVar x >>= maybe (err $ VarNotFoundError sp x) pure
 typecheckExpr _ (Lit sp l) = pure $ litType sp l
-typecheckExpr v (App sp e1 e2) = do
+typecheckExpr v (App _ e1 e2) = do
   t1  <- typecheckExpr v e1
   t2  <- typecheckExpr v e2
   t11 <- dom (span e1) t1
   t12 <- cod (span e1) t1
   t2 ~~ t11
   pure t12
-typecheckExpr v (Lam sp x tx e) = do
+typecheckExpr v (Lam _ x tx e) = do
   t <- withEnv [(x, tx)] $ typecheckExpr v e
   pure $ TArr (span tx) tx t
-typecheckExpr v (Asc sp e t') = do
+typecheckExpr v (Asc _ e t') = do
   t <- typecheckExpr v e
   t ~~ t'
   pure t'
@@ -63,7 +64,7 @@ typecheckExpr v (Match sp e cs) = do
   valid v pats t
   ts <- mapM (typecheckCase v) cs
   maybe (err $ MatchTypesError sp) pure (equate ts)
-typecheckExpr v (BinOp sp bop e1 e2) = do
+typecheckExpr v (BinOp _ bop e1 e2) = do
   t1 <- typecheckExpr v e1
   t2 <- typecheckExpr v e2
   bopType bop t1 t2

@@ -6,15 +6,14 @@ module Interpreter where
 import Data.Text (Text)
 import Interpreter.Parser (parseSrc, ParseError)
 import Interpreter.Syntax.Desugar (desugar)
-import Data.Bifunctor (first)
-import Interpreter.Error (errTxt, ErrorTxt (errorTxt), Error)
+import Interpreter.Error (ErrorTxt (errorTxt), Error)
 import Interpreter.Printer (ppr)
 import Interpreter.Check (wfEnv, typecheck)
-import Data.Maybe (fromMaybe, listToMaybe)
+import Data.Maybe (listToMaybe)
 import Interpreter.Translate (translate)
 import Interpreter.Eval (initValEnv, eval)
 import qualified Interpreter.Eval as Eval
-import Debug.Trace (trace)
+import Debug.Trace (trace, traceM)
 import Control.Monad.Except (ExceptT, runExceptT, MonadIO (liftIO), withExceptT)
 import Control.Monad.Trans.Except (ExceptT(ExceptT))
 import Interpreter.Syntax.Common (Valid)
@@ -27,25 +26,34 @@ newtype ResultText = ResultText (Text, [Text])
 
 check :: Valid -> Text -> IO (Either ErrorText ResultText)
 check valid src = runExceptT $ do
+  traceM "Preparser"
   -- Parse
   (env, fs, ks, es) <- withErr $ parseSrc src
+  traceM "Postparser"
 
   -- Desugar
   es' <- withErr $ mapM (desugar env) es
   fs' <- withErr $ (mapM . mapM) (desugar env) fs
   ks' <- withErr $ (mapM . mapM) (desugar env) ks
+  traceM "Postdesugar"
 
   -- Typecheck
   withErr $ wfEnv env
+  traceM "WF"
   ts <- withErr $ mapM (typecheck valid env) es'
+  traceM "PostTypecheck Expr"
   withErr $ (mapM_ . mapM_) (typecheck valid env) fs'
+  traceM "PostTypecheck Funs"
   withErr $ (mapM_ . mapM_) (typecheck valid env) ks'
+  traceM "PostTypecheck Ks"
 
   -- Select the last raw expression
   (e, t) <- ExceptT . pure . note noRawWarning . listToMaybe $ zip es' ts
 
+  traceM "Preprint"
   -- To text
   let eTxt = ppr e <> "~:~" <> ppr t
+  traceM "Postprint"
 
   pure $ ResultText (trace (show eTxt) eTxt, [])
 

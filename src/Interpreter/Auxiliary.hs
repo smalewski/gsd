@@ -15,8 +15,9 @@ import Debug.Trace (trace)
 import Data.Set (Set)
 import qualified Data.Map as Map
 import qualified Data.Set as S
-import Data.Maybe (isNothing, fromMaybe)
+import Data.Maybe (isNothing, fromMaybe, catMaybes)
 
+import Debug.Trace (traceShow)
 
 -- * Consistent lifting of functions
 
@@ -53,17 +54,23 @@ fty sp l dt@(TData _ d)
                  elseM (pure $ TUnkn sp)
   |otherwise = meetLty
   where
-  meetLty' = meetList <$> (ctors sp d >>= mapM (lty sp l))
-  meetLty = meetLty' >>= maybe (err $ errNoLabel sp l dt) pure
-fty sp l (TUnclass sp') = joinList <$> (openDatatypes >>= mapM (fty sp l . TData mempty))
-fty sp l (TUnknData sp') = joinList <$> (datatypes >>= mapM (fty sp l . TData mempty))
-fty sp l (TUnkn sp') = joinList <$> (datatypes >>= mapM (fty sp l . TData mempty))
-fty sp l t = err $ errConsistency sp t (TUnknData mempty)
+  meetLty' = meetList . catMaybes <$> (ctors sp d >>= mapM (errorMaybe . lty sp l))
+  meetLty  = meetLty' >>= maybe (err $ errNoLabel sp l dt) pure
+fty sp l (TUnclass sp') = joinFty sp sp' l openDatatypes
+fty sp l (TUnknData sp') = joinFty sp sp' l datatypes
+fty sp l (TUnkn sp') = fty sp l (TUnknData sp')
+fty sp _ t = err $ errConsistency sp t (TUnknData sp)
+
+joinFty :: (IsError err, Monoid acc, Monad bot)
+        => Span -> Span -> LabelName
+        -> EnvM bot env acc err [DataName]
+        -> EnvM bot env acc err Type
+joinFty sp sp' l datas = joinList . catMaybes <$> (datas >>= mapM (errorMaybe . fty sp l . TData sp'))
 
 lty :: (IsError err, Monoid acc, Monad bot) => Span -> LabelName -> CtorName -> EnvM bot env acc err Type
 lty sp l c =
   ifM (isUnclass c)
-    thenM (pure $ TUnkn mempty)
+    thenM (pure $ TUnkn sp)
     elseM (fromMaybeM (err $ errNoCtorLabel sp l c) (lookupCtorLabel l c))
 
 parg :: (IsError err, Monoid acc, Monad bot)
@@ -71,11 +78,11 @@ parg :: (IsError err, Monoid acc, Monad bot)
      -> EnvM bot env acc err [(Name, Type)]
 parg (CtorP sp c xs) = do
   ts <- ifM (isUnclass c)
-      thenM (pure . repeat $ TUnkn mempty)
+      thenM (pure . replicate (length xs) $ TUnkn mempty)
       elseM (fromMaybeM (pure []) (ctorTypes c))
   when (length xs /= length ts) (err $ errInvalidLabels sp c)
   pure $ zip xs ts
-parg (DefP sp') = pure []
+parg (DefP _) = pure []
 
 equate :: [Type] -> Maybe Type
 equate = meetList

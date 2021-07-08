@@ -107,8 +107,15 @@ findCtors (Access _ e _) = findCtors e
 findCtors (Ite _ e2 e3 e4) = concatMap findCtors [e2, e3, e4]
 findCtors (Let _ bs e) = concatMap (findCtors . lbExpr) bs <> findCtors e
 
+mapCase :: (Expr -> Expr) -> Case -> Case
+mapCase f (Case p e) = Case p (f e)
+
 findCtorsCase :: Case -> [FoundCtor]
 findCtorsCase (Case p e) = findCtorsPat p <> findCtors e
   where
     findCtorsPat (CtorP _ c xs) = [FPat c $ length xs]
     findCtorsPat _              = []
+
+
+mapBinding :: (Type -> Type) -> (a -> b) -> LetBinding a -> LetBinding b
+mapBinding f g (LetBinding s n t e) = LetBinding s n (f t) (g e)

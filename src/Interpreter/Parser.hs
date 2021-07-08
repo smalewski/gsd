@@ -19,7 +19,7 @@ import Interpreter.Syntax.Base
 import Interpreter.Parser.Definition
 import Control.Monad (join, void)
 import Data.Maybe (mapMaybe, fromMaybe)
-import Data.List (sortOn, partition, sort, foldl')
+import Data.List (sortOn, partition, sort, foldl', find)
 import Interpreter.Span (span)
 import Interpreter.Error (ErrorTxt(errorTxt))
 import Interpreter.Printer (ppr)
@@ -42,7 +42,7 @@ parseSrc =
   in first (ParseError . errorBundlePretty) . (`runReader` s0) . runParserT parseSrc' "" . (<> stdlib)
 
 parseSrc' :: Parser Result
-parseSrc' = parser >>= either customFailure' pure . reduceDefs
+parseSrc' = parser >>= either customFailure' (pure . initOpeness) . reduceDefs
 
 isDef :: Def -> Bool
 isDef DataDef {} = True
@@ -62,17 +62,49 @@ isRaw :: Def -> Bool
 isRaw Raw {} = True
 isRaw _ = False
 
+getDeclOpeness :: DataName -> Env Type -> Openess
+getDeclOpeness d@(DataName _ _ o) = maybe o openess . find (sameName d) . Map.keys . dataCtx
+  where
+    sameName (DataName _ d1 _) (DataName _ d2 _) = d1 == d2
+    openess (DataName _ _ o') = o'
+
+initOpeness :: Result -> Result
+initOpeness (env, xs, fs, es) = ( replT <$> env
+                                , fmap replE <$> xs
+                                , fmap replE <$> fs
+                                , replE <$> es)
+  where
+  replT :: Type -> Type
+  replT (TData s d) = TData s $ setOpeness (getDeclOpeness d env) d
+  replT (TArr s t1 t2) = TArr s (replT t1) (replT t2)
+  replT t = t
+
+  replE :: Expr -> Expr
+  replE (Var s n) = Var s n
+  replE (Lit s l) = Lit s l
+  replE (App s e2 e3 l_e) = App s (replE e2) (replE e3) (replE <$> l_e)
+  replE (Lam s xts e) = Lam s (fmap replT <$> xts) (replE e)
+  replE (Asc s e t) = Asc s (replE e) (replT t)
+  replE (CtorLbl s c args) = CtorLbl s c (map3 replE <$> args)
+  replE (CtorPos s c args) = CtorPos s c (replE <$> args)
+  replE (Match s e css) = Match s (replE e) (mapCase replE <$> css)
+  replE (BinOp s bop e1 e2) = BinOp s bop (replE e1) (replE e2)
+  replE (Let s bs e) = Let s (mapBinding replT replE <$> bs) (replE e)
+  replE (Access s e l) = Access s (replE e) l
+  replE (Ite s e1 e2 e3) = Ite s (replE e1) (replE e2) (replE e3)
+
+map3 :: (a -> b) -> (x,y,a) -> (x,y,b)
+map3 f (x,y,a) = (x, y, f a)
+
 reduceDefs :: [Def] -> Either Error Result
 reduceDefs ds = do
   let (defs, decls) = partition isDef ds
       env = initEnv defs
-      cs  = concatMap findCtorsDef decls
-  env' <- pure env --extendEnvWithUnclass env cs
-  let ks    = mapMaybe (fromConstDef env') decls
+  let ks    = mapMaybe (fromConstDef env) decls
       raws  = mapMaybe fromRaw decls
-  funs <- mapM (fromFunDef env') $ filter isFunDef decls
-  let env'' = extendEnv env' $ fmap (\x -> TypeDef (fst x) (TUnkn mempty)) (ks <> funs)
-  pure (env'', funs, ks, reverse raws)
+  funs <- mapM (fromFunDef env) $ filter isFunDef decls
+  let env' = extendEnv env $ fmap (\x -> TypeDef (fst x) (TUnkn mempty)) (ks <> funs)
+  pure (env', funs, ks, reverse raws)
 
 fromRaw :: Def -> Maybe Expr
 fromRaw (Raw e) = Just e
@@ -93,8 +125,8 @@ varsTypes :: [(Name, Type)]
   -> Type ->
   Either Error ([(Name, Type)], Type)
 varsTypes lts [] t = Right (reverse lts, t)
-varsTypes lts (l:ls) t@(TUnkn s) = varsTypes ((l,t) : lts) ls t
-varsTypes lts (l:ls) (TArr s t1 t2) = varsTypes ((l,t1) : lts) ls t2
+varsTypes lts (l:ls) t@TUnkn{} = varsTypes ((l,t) : lts) ls t
+varsTypes lts (l:ls) (TArr _ t1 t2) = varsTypes ((l,t1) : lts) ls t2
 varsTypes _ _ t = Left $ EFunType t
 
 fromConstDef :: Env Type -> Def -> Maybe (Name, Expr)

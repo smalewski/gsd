@@ -32,7 +32,7 @@ data Env a = Env
     ctorCtx :: Map CtorName CtorInfo,
     varCtx :: Map Name a
   }
-  deriving (Eq, Show)
+  deriving (Eq, Show, Functor)
 
 newtype EnvM bot env acc err a = EnvM
   { runEnvM :: ReaderT (Env env) (WriterT acc  (ExceptT err bot)) a
@@ -148,3 +148,6 @@ withEnv mp comp = do
   ctx <- asks varCtx
   let newCtx = ctx <> Map.fromList mp
   local (\x -> x {varCtx = newCtx}) comp
+
+errorMaybe :: (MonadError e m) => m a -> m (Maybe a)
+errorMaybe ma = (Just <$> ma) `catchError` (\ _ -> pure Nothing)
