@@ -1,0 +1,16 @@
+data List = Cons {hd : ?, tl : List} | Nil
+
+flatten : ?D -> List
+flatten l =
+  match l with
+    Nil       => Nil
+    Cons x xs => append (flatten x) (flatten xs)
+    _         => Cons l Nil
+
+append : List -> List -> List
+append l1 l2 =
+  match l1 with
+    Nil       => l2
+    Cons x xs => Cons x (append xs l2)
+
+flatten (Cons (Cons (Foo {x = 3}) Nil) (Cons (Cons (Bar {x = 4}) Nil) Nil))

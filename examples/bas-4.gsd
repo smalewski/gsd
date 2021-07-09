@@ -1,0 +1,36 @@
+data Response = Success {x : Data} | Fail {msg : String}
+data Data = N {x : Int} | B {b : Bool}
+data Error = InvalidKeyError
+           -- | IllFormedRequestError is no longer possible
+           -- | MethodError {name : String} is no longer possible
+data Request = Plus {key : Int, x : Int, y : Int}
+             | Minus {key : Int, x : Int, y : Int}
+             | Not {key : Int, b : Bool}
+
+serve : String -> String
+serve jsonReq = toJSON (handleRequest (fromJSON jsonReq))
+
+handleRequest : Request -> Response
+handleRequest request =
+  withValidKey request (\r : Request =>
+                          match r with
+                            Plus key x y  => Success (N (x + y))
+                            Minus key x y => Success (N (x - y))
+                            Not key x     => Success (B (not x)))
+                            -- _             => Fail (throw MethodError) -- ruled out!
+
+withValidKey : Request -> (Request -> Response) -> Response
+withValidKey r action =
+  if isValidKey r.key
+    then action r
+    else Fail (throw InvalidKeyError)
+
+isValidKey : Int -> Bool
+isValidKey n = True
+
+throw : Error -> String
+throw err = match err with
+              InvalidKeyError => "invalid key"
+
+serve '{"Plus": {"key": 10, "x": 1, "y": 2}}'
+-- serve '{"Times": {"key": 10, "x": 1, "y": 2}}'

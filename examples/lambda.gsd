@@ -1,0 +1,31 @@
+data Assoc = Empty | Cons {k : ?, v : ?, tl : Assoc}
+
+insert : Assoc -> ? -> ? -> Assoc
+insert env x v = Cons x v env
+
+lookup : ? -> Assoc -> ?
+lookup x env =
+  match env with
+    Empty         => NotFound {var = x}
+    Cons k v rest => if x == k then v else lookup x rest
+
+eval env expr =
+  match expr with
+    Var x      => lookup x env
+    Lambda x e => Clos {x = x, expr = e, env = env}
+    App e1 e2  => let v1 = eval env e1
+                      v2 = eval env e2
+                   in (match v1 with
+                        Clos x ex envx => eval (insert envx x v2) ex
+                        _              => AppliedNonLambda {expr = v1})
+    _ => expr
+
+-- \x => x
+id = Lambda { x = "x", e = Var { x = "x" } }
+-- \x => x x
+omega = Lambda { x = "x", e = App { e1 = Var { x = "x" }, e2 = Var { x = "x" } } }
+-- \x => x x x
+omega3 = Lambda {x = "x", e = App { e1 = App { e1 = Var { x = "x" }, e2 = Var { x = "x" }}, e2 = Var  { x = "x" }} }
+
+-- (\x => x x x) (\x => x)
+eval Empty (App { e1 = omega3, e2 = id })

@@ -1,0 +1,43 @@
+data Response = Success { x : ? } | Fail { msg : String }
+
+-- Declaring possible constructors
+open data Error = MethodError
+                | InvalidKeyError
+                | IllFormedRequestError
+
+open data Request = Plus  { key : Int, x : ?, y : ? }
+                  | Minus { key : Int, x : ?, y : ? }
+
+serve : String -> String
+serve jsonReq = toJSON (handleRequest (fromJSON jsonReq))
+
+handleRequest : Request -> Response
+handleRequest request =
+  withValidKey request (\r : Request =>
+                          match r with
+                            Plus key x y  => Success (x + y)
+                            Minus key x y => Success (x - y)
+                            Not key x     => Success (not x)
+                            _             => Fail (throw MethodError))
+
+
+withValidKey : Request -> (Request -> Response) -> Response
+withValidKey r action =
+  if isValidKey r.key
+    then action r
+    else Fail (throw InvalidKeyError)
+
+
+throw : Error -> String
+throw err =
+  match err with
+    MethodError           => "unknown method"
+    InvalidKeyError       => "invalid key"
+    IllFormedRequestError => "request missing 'key'"
+    _                     => "unknown error"
+
+isValidKey : Int -> Bool
+isValidKey key = True
+
+serve '{"Plus": {"key": 10, "x": 1, "y": 2}}'
+-- serve '{"Times": {"key": 10, "x": 1, "y": 2}}'
