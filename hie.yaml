@@ -1,10 +1,10 @@
 cradle:
   stack:
     - path: "./src"
-      component: "gdt:lib"
+      component: "gsd:lib"
 
     - path: "./app/Main.hs"
-      component: "gdt:exe:gdt-server"
+      component: "gsd:exe:gsd"
 
     - path: "./test"
-      component: "gdt:test:gdt-test"
+      component: "gsd:test:gsd-test"

@@ -1,4 +1,4 @@
-name:                gdt
+name:                gsd
 version:             0.1.0.0
 github:              "githubuser/gdt"
 license:             BSD3
@@ -43,11 +43,9 @@ dependencies:
 
 library:
   source-dirs: src
-  ghc-options:
-    - -Wall
 
 executables:
-  gdt-server:
+  gsd:
     main:                Main.hs
     source-dirs:         app
     ghc-options:
@@ -55,11 +53,11 @@ executables:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - gdt
+    - gsd
     - cmdargs
 
 tests:
-  gdt-test:
+  gsd-test:
     main:                Spec.hs
     source-dirs:         test
     ghc-options:
@@ -67,4 +65,4 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - gdt
+    - gsd
