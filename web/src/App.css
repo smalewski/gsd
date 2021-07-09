@@ -1,0 +1,20 @@
+.App {
+  text-align: center;
+}
+
+.AppCode {
+    text-align: left;
+    margin: 10px;
+}
+
+.AppCodeButtons {
+}
+
+.CodeMirror {
+    height: 400px;
+    font-size: 14px;
+}
+
+.expression-card {
+    overflow-x: scroll !important;
+}

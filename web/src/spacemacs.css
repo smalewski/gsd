@@ -1,0 +1,41 @@
+/*
+
+    Name:       spacemacs
+    Author:     Stefan Malewski (http://github.com/smalewski)
+
+    Original spacemacs color scheme by Zeno Rocha (https://github.com/zenorocha/spacemacs-theme)
+
+*/
+
+
+.cm-s-spacemacs.CodeMirror, .cm-s-spacemacs .CodeMirror-gutters {
+  background-color: #292b2e !important;
+  color: #e3dedd !important;
+  border: none;
+}
+.cm-s-spacemacs .CodeMirror-gutters { color: #5d4d7a; }
+.cm-s-spacemacs .CodeMirror-cursor { border-left: solid thin #e3dedd; }
+.cm-s-spacemacs .CodeMirror-linenumber { color: #44505c; }
+.cm-s-spacemacs .CodeMirror-selected { background: #444155; }
+.cm-s-spacemacs .CodeMirror-line::selection, .cm-s-spacemacs .CodeMirror-line > span::selection, .cm-s-spacemacs .CodeMirror-line > span > span::selection { background: rgba(255, 255, 255, 0.10); }
+.cm-s-spacemacs .CodeMirror-line::-moz-selection, .cm-s-spacemacs .CodeMirror-line > span::-moz-selection, .cm-s-spacemacs .CodeMirror-line > span > span::-moz-selection { background: rgba(255, 255, 255, 0.10); }
+.cm-s-spacemacs span.cm-comment { color: #2aa1ae; }
+.cm-s-spacemacs span.cm-string, .cm-s-spacemacs span.cm-string-2 { color: #2d9574; }
+.cm-s-spacemacs span.cm-number { color: #a45bad; }
+.cm-s-spacemacs span.cm-variable { color: #7590db; }
+.cm-s-spacemacs span.cm-variable-2 { color: #b2b2b2; }
+.cm-s-spacemacs span.cm-def { color: #bc6ec5; font-weight: bold; }
+.cm-s-spacemacs span.cm-operator { color: #7590db; }
+.cm-s-spacemacs span.cm-keyword { color: #4f97d7; font-weight: bold; }
+.cm-s-spacemacs span.cm-atom { color: #bd93f9; }
+.cm-s-spacemacs span.cm-meta { color: #f8f8f2; }
+.cm-s-spacemacs span.cm-tag { color: #ff79c6; }
+.cm-s-spacemacs span.cm-attribute { color: #50fa7b; }
+.cm-s-spacemacs span.cm-qualifier { color: #50fa7b; }
+.cm-s-spacemacs span.cm-property { color: #66d9ef; }
+.cm-s-spacemacs span.cm-builtin { color: #50fa7b; }
+.cm-s-spacemacs span.cm-error { text-decoration: underline wavy #e0211d; }
+.cm-s-spacemacs span.cm-variable-3, .cm-s-spacemacs span.cm-type { color: #ce537a; font-weight: bold; }
+
+.cm-s-spacemacs .CodeMirror-activeline-background { background: rgba(255,255,255,0.1); }
+.cm-s-spacemacs .CodeMirror-matchingbracket { text-decoration: underline; color: white !important; }
