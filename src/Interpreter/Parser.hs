@@ -18,18 +18,16 @@ import Interpreter.Parser.Definition
 import Data.Maybe (mapMaybe, fromMaybe)
 import Data.List (partition, foldl', find)
 import Interpreter.Span (span)
-import Interpreter.Error (ErrorTxt(errorTxt))
+import Interpreter.Error (ErrorInfo(..), ErrorLevel (PError))
 import Interpreter.Stdlib (stdlib)
 
 type Result = (Env Type, [(Name, Expr)], [(Name, Expr)], [Expr])
 
 newtype ParseError = ParseError String
 
-instance ErrorTxt ParseError where
-  errorTxt (ParseError s) = (Nothing, pErr, pack s)
-
-pErr :: Text
-pErr = "Parsing Error"
+instance ErrorInfo ParseError where
+  errorLvl   _ = PError
+  errorTitle _ = "Parse error!"
 
 parseSrc :: Text -> Either ParseError Result
 parseSrc =

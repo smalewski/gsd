@@ -6,7 +6,7 @@ module Interpreter.Eval where
 import Control.Monad.Except (ExceptT)
 import Data.List (find)
 import Interpreter.Env
-import Interpreter.Error (ErrorTxt(errorTxt))
+import Interpreter.Error (ErrorInfo(..), ErrorLevel (Error))
 import Interpreter.Syntax.Common
 import Interpreter.Syntax.EvCore
 import Interpreter.Type
@@ -44,24 +44,9 @@ data Error
   | EToJSON Expr
   | EFromJSON Text
 
-instance ErrorTxt Error where
-  errorTxt (EMatch c)
-    = (Nothing, rErr,
-       "No case matches constructor $" <> ppr c
-         <> "$ in match expression.")
-  errorTxt (EAccess c l)
-    = (Nothing, rErr, "Constructor $" <> ppr c <> "$ doesn't have label $" <> ppr l <> "$.")
-  errorTxt (ETrans t1 t2)
-    = (Nothing, rErr, "Consistent transitivity between $" <> ppr t1 <> "$ and $" <> ppr t2 <> "$ is not defined.")
-  errorTxt (EVar n)
-    = (Nothing, rErr, "Variable $" <> ppr n <> "$ is not in scope.")
-  errorTxt (EToJSON e)
-    = (Nothing, rErr, "Cannot be converted to JSON: " <> ppr e)
-  errorTxt (EFromJSON txt)
-    = (Nothing, rErr, "Cannot be converted from JSON: '" <> txt <> "'.")
-
-rErr :: Text
-rErr = "Runtime Error"
+instance ErrorInfo Error where
+  errorLvl _ = Error
+  errorTitle _ = "Runtime error"
 
 type CtorArgValue = CtorArg
 

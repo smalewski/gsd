@@ -1,7 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE DeriveGeneric #-}
-module Server.Api (API, api, SourceCode(..), Response(..), Judgment(..)) where
+module Server.Api (API, api, SourceCode(..), Response(..)) where
 
 import Data.Aeson
 import Servant
@@ -16,15 +16,11 @@ type API = "gsd" :> "api" :> "eval" :> ReqBody '[JSON] SourceCode :> Post '[JSON
 api :: Proxy API
 api = Proxy
 
-data Judgment = Judgment { expression :: Text, premises :: [Judgment] }
-  deriving (Eq, Show, Generic)
-instance ToJSON Judgment
-
 data Response
-  = Ok    { val   :: Judgment, steps :: [Judgment] }
-  | Warn  { title :: Text, msg   :: Text   }
-  | Err   { title :: Text, msg   :: Text   }
-  | PErr  { title :: Text, msg   :: Text   }
+  = Ok    { val   :: Text, typ :: Text, steps :: [Text] }
+  | Warn  { title :: Text, msg :: Text   }
+  | Err   { title :: Text, msg :: Text   }
+  | PErr  { title :: Text, msg :: Text   }
   deriving (Eq, Show, Generic)
 instance ToJSON Response
 

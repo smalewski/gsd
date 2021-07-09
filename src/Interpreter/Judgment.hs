@@ -3,6 +3,7 @@
 module Interpreter.Judgment where
 
 import Interpreter.Printer
+import Interpreter.Printer.Latex
 import Interpreter.Syntax.Core
 import Data.Text (Text)
 import Interpreter.Env

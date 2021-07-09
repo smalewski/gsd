@@ -4,27 +4,28 @@
 module Interpreter where
 
 import Data.Text (Text)
-import Interpreter.Parser (parseSrc, ParseError)
+import Interpreter.Parser
 import Interpreter.Syntax.Desugar (desugar)
-import Interpreter.Error (ErrorTxt (errorTxt), Error)
-import Interpreter.Printer (ppr)
+import Interpreter.Error (ErrorInfo(..), ErrorLevel(Warning))
 import Interpreter.Check (wfEnv, typecheck)
 import Data.Maybe (listToMaybe)
 import Interpreter.Translate (translate)
 import Interpreter.Eval (initValEnv, eval)
 import qualified Interpreter.Eval as Eval
-import Debug.Trace (trace, traceM)
-import Control.Monad.Except (ExceptT, runExceptT, MonadIO (liftIO), withExceptT)
+import Interpreter.Type (Type)
+import qualified Interpreter.Syntax.EvCore as Ev
+import qualified Interpreter.Syntax.Core as B
+import Control.Monad.Except (ExceptT, runExceptT, MonadIO (liftIO), withExceptT, mapExceptT)
 import Control.Monad.Trans.Except (ExceptT(ExceptT))
 import Interpreter.Syntax.Common (Valid)
+import qualified Interpreter.Eval as E
+import qualified Interpreter.Error as T
+import Data.Bifunctor (second, first)
 
-data ErrorLevel = PError | Error | Warning
+data Res a = Res { expr :: a, typ :: Type, trace :: [a] }
+  deriving (Show)
 
-newtype ErrorText = ErrorText (ErrorLevel, Text, Text)
-
-newtype ResultText = ResultText (Text, [Text])
-
-check :: Valid -> Text -> IO (Either ErrorText ResultText)
+check :: Valid -> Text -> IO (Either OutError (Res B.Expr))
 check valid src = runExceptT $ do
   -- Parse
   (env, fs, ks, es) <- withErr $ parseSrc src
@@ -41,14 +42,11 @@ check valid src = runExceptT $ do
   withErr $ (mapM_ . mapM_) (typecheck valid env) ks'
 
   -- Select the last raw expression
-  (e, t) <- ExceptT . pure . note noRawWarning . listToMaybe $ zip es' ts
+  (e, t) <- withErr . note NoExprWarning . listToMaybe $ zip es' ts
 
-  -- To text
-  let eTxt = ppr e <> "~:~" <> ppr t
+  pure $ Res e t []
 
-  pure $ ResultText (trace (show eTxt) eTxt, [])
-
-run :: Valid -> Bool -> Text -> IO (Either ErrorText ResultText)
+run :: Valid -> Bool -> Text -> IO (Either OutError (Res Ev.Expr))
 run valid trace src = runExceptT $ do
   -- Parse
   (env, fs, ks, es) <- withErr $ parseSrc src
@@ -65,7 +63,7 @@ run valid trace src = runExceptT $ do
   withErr $ (mapM_ . mapM_) (typecheck valid env) ks'
 
   -- Select the last raw expression
-  (e, t) <- ExceptT . pure . note noRawWarning . listToMaybe $ zip es' ts
+  (e, t) <- withErr . note NoExprWarning . listToMaybe $ zip es' ts
 
   -- Translate
   e'   <- withErr $ translate env e
@@ -73,47 +71,56 @@ run valid trace src = runExceptT $ do
   ks'' <- withErr $ (mapM . mapM) (translate env) ks'
 
   -- Evaluate
-  valEnv     <- withErr' $ initValEnv trace env fs'' ks''
-  (v, stack) <- withErrIO $ eval trace valEnv e'
+  valEnv     <- withExceptT toOutError $ initValEnv trace env fs'' ks''
+  (v, stack) <- withErrM $ eval trace valEnv e'
 
-  -- To text
-  let vTxt       = ppr v <> "~:~" <> ppr t
-      stackTxt   = ppr <$> stack
+  pure $ Res v t stack
 
-  pure $ ResultText (vTxt, stackTxt)
 
-noRawWarning :: ErrorText
-noRawWarning = ErrorText (Warning, "No expression to evaluate", "\\text{The program typechecked correctly, but there is no expression to evaluate.}")
+data Error = NoExprWarning
 
-withErr :: (MonadIO m, ErrorWithLevel a) => Either a b -> ExceptT ErrorText m b
-withErr = withExceptT errorWithLevel . ExceptT . pure
+instance ErrorInfo Error where
+  errorLvl NoExprWarning = Warning
+  errorTitle NoExprWarning = "No expression to evaluate."
 
-withErrIO :: (MonadIO m, ErrorWithLevel a) => IO (Either a b) -> ExceptT ErrorText m b
-withErrIO = withExceptT errorWithLevel . ExceptT . liftIO
+data OutError
+  = IE Error
+  | EE E.Error
+  | PE ParseError
+  | TE T.Error
 
-withErr' :: (MonadIO m, ErrorWithLevel a) => ExceptT a m b -> ExceptT ErrorText m b
-withErr' = withExceptT errorWithLevel
+instance ErrorInfo OutError where
+  errorLvl (IE e) = errorLvl e
+  errorLvl (EE e) = errorLvl e
+  errorLvl (PE e) = errorLvl e
+  errorLvl (TE e) = errorLvl e
+
+  errorTitle (IE e) = errorTitle e
+  errorTitle (EE e) = errorTitle e
+  errorTitle (PE e) = errorTitle e
+  errorTitle (TE e) = errorTitle e
+
+class IsError a where
+  toOutError :: a -> OutError
+
+instance IsError Error where
+  toOutError = IE
+
+instance IsError E.Error where
+  toOutError = EE
+
+instance IsError ParseError where
+  toOutError = PE
+
+instance IsError T.Error where
+  toOutError = TE
+
+withErr :: (Monad m, IsError e) => Either e a -> ExceptT OutError m a
+withErr = withErrM . pure
+
+withErrM :: (Monad m, IsError e) => m (Either e a) -> ExceptT OutError m a
+withErrM = withExceptT toOutError . ExceptT
 
 note :: a -> Maybe b -> Either a b
 note x Nothing = Left x
 note _ (Just x) = Right x
-
-class ErrorWithLevel a where
-  errorWithLevel :: a -> ErrorText
-
-instance ErrorWithLevel Error where
-  errorWithLevel = errorWithLevel'
-
-instance ErrorWithLevel ParseError where
-  errorWithLevel x = let (_, title, body) = errorTxt x
-                     in ErrorText (PError, title, body)
-
-instance ErrorWithLevel Eval.Error where
-  errorWithLevel = errorWithLevel'
-
-errorWithLevel' :: ErrorTxt a => a -> ErrorText
-errorWithLevel' x = let (_, title, body) = errorTxt x
-                    in ErrorText (Error, title, "\\text{" <> body <> "}")
-
-instance ErrorWithLevel ErrorText where
-  errorWithLevel = id

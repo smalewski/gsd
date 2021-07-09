@@ -10,6 +10,9 @@ import Servant
 import Servant.Server
 import Server.Api
 import Interpreter
+import Interpreter.Error (ErrorLevel(..), ErrorInfo(..))
+import Interpreter.Printer (Printable(ppr))
+import Interpreter.Printer.Latex
 import Control.Monad.IO.Class (liftIO)
 import Data.Text (Text, unpack)
 import Data.Functor (($>))
@@ -24,16 +27,18 @@ server :: Server API
 server = evalH :<|> checkH
   where
     evalH :: SourceCode -> Handler Response
-    evalH (SourceCode src valid trace) = liftIO (run valid trace src >>= buildResponse)
+    evalH (SourceCode src valid trace) = liftIO (buildResponse <$> run valid trace src)
 
     checkH :: SourceCode -> Handler Response
-    checkH (SourceCode src valid _) = liftIO (check valid src >>= buildResponse)
+    checkH (SourceCode src valid _) = liftIO (buildResponse <$> check valid src)
 
-buildResponse :: Either ErrorText ResultText -> IO Response
-buildResponse (Right (ResultText (value, stack))) = pure $ Ok (dummyJudgment value) (dummyJudgment <$> stack)
-buildResponse (Left (ErrorText (Warning, title, msg))) = pure $ Warn title msg
-buildResponse (Left (ErrorText (Error, title, msg))) = pure $ Err title msg
-buildResponse (Left (ErrorText (PError, title, msg))) = putStrLn (unpack msg) $> PErr title msg
-
-dummyJudgment :: Text -> Judgment
-dummyJudgment txt = Judgment txt []
+buildResponse :: Printable a => Either OutError (Res a) -> Response
+buildResponse (Right (Res e t st)) = Ok (ppr e) (ppr t) (ppr <$> st)
+buildResponse (Left e) =
+  let title = errorTitle e
+      msg = ppr e
+      ctor = case errorLvl e of
+              PError  -> PErr
+              Error   -> Err
+              Warning -> Warn
+  in ctor title msg

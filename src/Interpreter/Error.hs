@@ -7,8 +7,8 @@ import Prelude hiding (span)
 import Interpreter.Span
 import Interpreter.Syntax.Common
 import Interpreter.Type
+import Interpreter.Printer
 import Data.Text (Text)
-import Interpreter.Printer (ppr)
 
 class IsError a where
   errCtorNotFound :: Span -> CtorName -> a
@@ -74,53 +74,16 @@ data Error
   | ImposibleError
   deriving (Eq, Show)
 
-errTxt :: ErrorTxt a => a -> (Text, Text)
-errTxt x
-  = let (_, title, msg) = errorTxt x
-      --  s = maybe "" (\s -> showSpan s <> ": ") ms
-        s = ""
-    in (title, "\\text{" <> s <> msg <> "}")
+data ErrorLevel = PError | Error | Warning
+  deriving (Show)
 
-class ErrorTxt a where
-  errorTxt :: a -> (Maybe Span, Text, Text)
+class ErrorInfo a where
+  errorLvl   :: a -> ErrorLevel
+  errorTitle :: a -> Text
 
-instance ErrorTxt (Maybe Span, Text, Text) where
-  errorTxt = id
-
-instance ErrorTxt Error where
-
-  errorTxt (VarNotFoundError s x)
-    = (Just s, tErr, "Variable $" <> ppr x <> "$ is not defined.")
-  errorTxt (CtorNotFoundError s c)
-    = (Just s, tErr, "Unclassified data constructor $" <> ppr c <> "$ cannot be instantiated positionaly.")
-  errorTxt (DataNotFoundError s d)
-    = (Just s, tErr, "Datatype $" <> ppr d <> "$ is not defined.")
-  errorTxt (ConsistencyError s t1 t2)
-    = (Just s, tErr, "Types $" <> ppr t1 <> "$ and $" <> ppr t2 <> "$ are not consistent.")
-  errorTxt (LabelNotConsistentError s l t)
-    = (Just s, tErr, "Types for label $" <> ppr l <> "$ in type $" <> ppr t <> "$ are not consistent.")
-  errorTxt (NoLabelError s l t)
-    = (Just s, tErr, "Type $" <> ppr t <> "$ does not have label $" <> ppr l <> "$.")
-  errorTxt (NoCtorLabelError s l c)
-    = (Just s, tErr, "Constructor $" <> ppr c <> "$ does not have label $" <> ppr l <> "$.")
-  errorTxt (InvalidLabelsError s c)
-    = (Just s, tErr, "Labels for constructor $" <> ppr c <> "$ do not match the definition.")
-  errorTxt (InvalidMatchError s v t)
-    = (Just s, tErr, "Invalid match: Patterns are not $" <> ppr v <> "$ with respect to $" <> ppr t <> "$.")
-  errorTxt (DuplicatedDataError s d)
-    = (Just s, tErr, "Duplicated datatype definition: There two datatypes with the name $" <> ppr d <> "$.")
-  errorTxt DuplicatedCtorError
-    = (Just mempty, tErr, "Duplicated constructor definitions.")
-  errorTxt (DuplicatedLabelError c)
-    = (Just $ span c, tErr, "Duplicated labels in constructor definition: Constructor $"<> ppr c <> "$ have duplicated labels.")
-  errorTxt (NoOpenDataError s) = (Just s, tErr, "Unclassified data is used, but no open datatype is defined.")
-  errorTxt (NoDataError s) = (Just s, tErr, "A constructor is applied, but no datatype is defined.")
-  errorTxt (MatchTypesError s) = (Just s, tErr, "The types of the branches.")
-  errorTxt ImposibleError = (Nothing, "Imposible", "Imposible")
-  errorTxt _ = errorTxt ImposibleError
-
-tErr :: Text
-tErr = "Type Error"
+instance ErrorInfo Error where
+  errorLvl _ = Error
+  errorTitle _ = "Type error!"
 
 instance IsError Error where
   errCtorNotFound       = CtorNotFoundError
