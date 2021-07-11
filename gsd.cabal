@@ -4,18 +4,17 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 17b48b4f5d62bae00584ede5421d9a2216d23624a54f6720ca11ce6743b5a316
+-- hash: a4f0ef868a6c0ef8b10e252a01704c5b12426e0cf9d39a8bd0f9f1b438b835e1
 
 name:           gsd
 version:        0.1.0.0
-description:    Please see the README on GitHub at <https://github.com/githubuser/gdt#readme>
-homepage:       https://github.com/githubuser/gdt#readme
-bug-reports:    https://github.com/githubuser/gdt/issues
-author:         Author name here
-maintainer:     example@example.com
-copyright:      2020 Author name here
-license:        BSD3
-license-file:   LICENSE
+description:    Please see the README on GitHub at <https://github.com/smalewsk/gsd#readme>
+homepage:       https://github.com/smalewski/gsd#readme
+bug-reports:    https://github.com/smalewski/gsd/issues
+author:         Stefan Malewski
+maintainer:     smalewsk@dcc.uchile.cl
+copyright:      2021 Stefan Malewski
+license:        GPL-3
 build-type:     Simple
 extra-source-files:
     README.md
@@ -23,7 +22,7 @@ extra-source-files:
 
 source-repository head
   type: git
-  location: https://github.com/githubuser/gdt
+  location: https://github.com/smalewski/gsd
 
 library
   exposed-modules:
