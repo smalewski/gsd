@@ -2,7 +2,6 @@
 
 module Interpreter.Judgment where
 
-import Interpreter.Printer
 import Interpreter.Printer.Latex
 import Interpreter.Syntax.Core
 import Data.Text (Text)
@@ -10,7 +9,7 @@ import Interpreter.Env
 import Interpreter.Type
 import Data.Maybe (fromMaybe)
 
-class Printable a => Judgment a where
+class PrintableLatex a => Judgment a where
   premises :: Env Type -> a -> [Text]
   judgment :: Env Type -> a -> Type -> (Type, Text)
 

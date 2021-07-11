@@ -2,7 +2,6 @@
 
 module Interpreter.Printer.Plain where
 
-import Interpreter.Printer
 import Data.Text hiding (null)
 import Interpreter.Type
 import Interpreter.Syntax.Common
@@ -18,7 +17,7 @@ import qualified Data.Text as T
 data Detail = Full | OnlyEvidences | OnlyTypes | None
   deriving (Eq, Show)
 
-class Printable a where
+class PrintablePlain a where
   ppr :: a -> Text
 
   needParens :: a -> Bool
@@ -40,7 +39,7 @@ pprExpr = ppr
 (<+>) :: Text -> Text -> Text
 t1 <+> t2 = t1 <> " " <> t2
 
-ascMaybeParens :: Printable a => a -> Text
+ascMaybeParens :: PrintablePlain a => a -> Text
 ascMaybeParens x
   | needParens x = parens (ppr x)
   | otherwise    = ppr x
@@ -48,35 +47,35 @@ ascMaybeParens x
 braces :: Text -> Text
 braces x = "{" <> x <> "}"
 
-sepBy :: Printable a => Text -> [a] -> Text
+sepBy :: PrintablePlain a => Text -> [a] -> Text
 sepBy sep = intercalate sep . fmap ppr
 
-instance Printable Valid where
+instance PrintablePlain Valid where
   ppr Sound    = "Sound"
   ppr Exact    = "Exact"
   ppr Complete = "Complete"
 
-instance Printable Name where
+instance PrintablePlain Name where
   ppr (Name _ d) = d
 
-instance Printable CtorName where
+instance PrintablePlain CtorName where
   ppr (CtorName _ d) = d
 
-instance Printable DataName where
+instance PrintablePlain DataName where
   ppr (DataName _ d o) = d <> "_" <> ppr o
 
-instance Printable LabelName where
+instance PrintablePlain LabelName where
   ppr (LabelName _ d) = d
 
-instance Printable Openess where
+instance PrintablePlain Openess where
   ppr Open   = "O"
   ppr Closed = "C"
 
-instance Printable TBase where
+instance PrintablePlain TBase where
   ppr TInt    = "Int"
   ppr TString = "String"
 
-instance Printable Type where
+instance PrintablePlain Type where
   ppr (TBase _ t)    = ppr t
   ppr (TArr _ t1 t2) = maybeParens t1 <+> "->" <+> ppr t2
   ppr (TData _ n)    = ppr n
@@ -87,32 +86,32 @@ instance Printable Type where
   needParens TArr {} = True
   needParens _ = False
 
-instance Printable Lit where
+instance PrintablePlain Lit where
   ppr (LInt n) = pack $ show n
   ppr (LString s) = "\"" <> s <> "\""
 
-instance Printable Evidence where
+instance PrintablePlain Evidence where
   ppr (Evidence t) = "<" <> ppr t <> ">"
   needParens (Evidence t) = False
 
-instance Printable Case where
+instance PrintablePlain Case where
   ppr (Case p e) = ppr p <+> "=>" <+> ppr e
 
-instance Printable Pattern where
+instance PrintablePlain Pattern where
   ppr (CtorP _ c xs) = ppr c <+> sepBy " " xs
   ppr (DefP _) = "_"
 
-instance Printable BinOp where
+instance PrintablePlain BinOp where
   ppr Plus  = "+"
   ppr Minus = "-"
   ppr Times = "*"
   ppr Div   = "/"
   ppr Equal = "="
 
-instance Printable CtorArg where
+instance PrintablePlain CtorArg where
   ppr (CtorArg l e) = ppr l <> "=" <> ppr e
 
-instance Printable Expr where
+instance PrintablePlain Expr where
   ppr (Var x) = ppr x
   ppr (Lit l) = ppr l
   ppr (App e1 e2@App{}) = maybeParens e1 <+> parens (ppr e2)
@@ -142,13 +141,13 @@ instance Printable Expr where
 
 -- Core
 
-instance Printable C.Case where
+instance PrintablePlain C.Case where
   ppr (C.Case p e) = ppr p <+> "=>" <+> ppr e
 
-instance Printable C.CtorArg where
+instance PrintablePlain C.CtorArg where
   ppr (C.CtorArg _ l e) = ppr l <> "=" <> ppr e
 
-instance Printable C.Expr where
+instance PrintablePlain C.Expr where
   ppr (C.Var _ x) = ppr x
   ppr (C.Lit _ l) = ppr l
   ppr (C.App _ e1 e2@C.App{}) = maybeParens e1 <+> parens (ppr e2)
@@ -168,13 +167,13 @@ instance Printable C.Expr where
   needParens C.BinOp {} = True
   needParens _ = False
 
-instance Printable (Env a) where
+instance PrintablePlain (Env a) where
   ppr (Env dataCtx ctorCtx varCtx) =
     let emptyCtx = "."
         pprCtx ctx txt = if null ctx then emptyCtx else txt
     in pprCtx dataCtx "Delta" <> ";" <> pprCtx ctorCtx "Xi" <> ";" <> pprCtx varCtx "Gamma"
 
-instance Printable Error where
+instance PrintablePlain Error where
   ppr (VarNotFoundError s x)
     = "Variable " <> ppr x <> " is not defined."
   ppr (CtorNotFoundError s c)
@@ -205,12 +204,12 @@ instance Printable Error where
   ppr ImposibleError = "Imposible!"
   ppr _ = ppr ImposibleError
 
-instance Printable ErrorLevel where
+instance PrintablePlain ErrorLevel where
   ppr PError  = "Parse error"
   ppr Error   = "Error!"
   ppr Warning = "Warning"
 
-instance Printable E.Error where
+instance PrintablePlain E.Error where
   ppr (E.EMatch c) = "No case matches constructor " <> ppr c <> " in match expression."
   ppr (E.EAccess c l) = "Constructor " <> ppr c <> " doesn't have label " <> ppr l <> "."
   ppr (E.ETrans t1 t2) =
@@ -219,10 +218,10 @@ instance Printable E.Error where
   ppr (E.EToJSON e) = "Cannot be converted to JSON: " <> ppr e
   ppr (E.EFromJSON txt) = "Cannot be converted from JSON: '" <> txt <> "'."
 
-instance Printable I.Error where
+instance PrintablePlain I.Error where
   ppr I.NoExprWarning = "The program typechecked correctly, but there is no expression to evaluate."
 
-instance Printable I.OutError where
+instance PrintablePlain I.OutError where
   ppr (I.EE e) = ppr e
   ppr (I.IE e) = ppr e
   ppr (I.TE e) = ppr e

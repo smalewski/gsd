@@ -1,13 +1,12 @@
 {-# LANGUAGE OverloadedStrings #-}
-
 {-# LANGUAGE FlexibleInstances #-}
+
 module Interpreter.Error where
 
 import Prelude hiding (span)
 import Interpreter.Span
 import Interpreter.Syntax.Common
 import Interpreter.Type
-import Interpreter.Printer
 import Data.Text (Text)
 
 class IsError a where

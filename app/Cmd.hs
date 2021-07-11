@@ -3,9 +3,7 @@ module Cmd where
 
 import System.Console.CmdArgs
 import Interpreter.Syntax.Common
-
-data Format = Latex | Plain
-  deriving (Eq, Show, Data)
+import Interpreter.Printer (Format(..))
 
 data Cmd
   = Server { port :: Int }

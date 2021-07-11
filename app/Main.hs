@@ -10,7 +10,7 @@ import Cmd
 import Interpreter as I
 import Interpreter.Type (Type)
 import Interpreter.Syntax.EvCore (Expr)
-import Interpreter.Printer.Plain (Printable(ppr))
+import Interpreter.Printer (Format, ppr)
 import Data.Text (Text)
 import Data.Text.IO (readFile, putStrLn)
 
@@ -22,8 +22,8 @@ execCmd (Server port) = W.run port app
 execCmd (Eval valid format filename) = do
   src <- readFile filename
   res <- run valid False src
-  printResult res
+  printResult format res
 
-printResult :: Either OutError (Res Expr) -> IO ()
-printResult (Left e) = putStrLn $ ppr e
-printResult (Right (Res e t _)) = putStrLn $ ppr e <> " : " <> ppr t
+printResult :: Format -> Either OutError (Res Expr) -> IO ()
+printResult fmt (Left e) = putStrLn $ ppr fmt e
+printResult fmt (Right (Res e t _)) = putStrLn $ ppr fmt e <> " : " <> ppr fmt t

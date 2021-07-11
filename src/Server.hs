@@ -11,7 +11,7 @@ import Servant.Server
 import Server.Api
 import Interpreter
 import Interpreter.Error (ErrorLevel(..), ErrorInfo(..))
-import Interpreter.Printer.Latex (Printable(ppr))
+import Interpreter.Printer.Latex (PrintableLatex(ppr))
 import Control.Monad.IO.Class (liftIO)
 import Data.Text (Text, unpack)
 import Data.Functor (($>))
@@ -31,7 +31,7 @@ server = evalH :<|> checkH
     checkH :: SourceCode -> Handler Response
     checkH (SourceCode src valid _) = liftIO (buildResponse <$> check valid src)
 
-buildResponse :: Printable a => Either OutError (Res a) -> Response
+buildResponse :: PrintableLatex a => Either OutError (Res a) -> Response
 buildResponse (Right (Res e t st)) = Ok (ppr e) (ppr t) (ppr <$> st)
 buildResponse (Left e) =
   let title = errorTitle e
