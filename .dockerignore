@@ -1,0 +1,9 @@
+web
+dist-newstyle
+
+# vagrant stuff
+vagrant
+Vagrantfile
+
+# other
+TAGS
