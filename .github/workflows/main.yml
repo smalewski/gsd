@@ -20,7 +20,7 @@ jobs:
         if: matrix.os != 'windows-2019'
         with:
           path: ~/.stack
-          key: ${{ runner.os }}-store-${{ hashFiles('stack.yaml.lock') }}-${{ hashFiles('gdt.cabal') }}
+          key: ${{ runner.os }}-store-${{ hashFiles('stack.yaml.lock') }}-${{ hashFiles('gsd.cabal') }}
 
       - name: Build generator
         run:  stack build
@@ -29,10 +29,10 @@ jobs:
         shell: bash
         run: |
           mkdir package
-          dir=$(stack path --dist-dir)/build/gdt-server
-          [[ -e "$dir/gdt-server" ]] && cp "$dir/gdt-server" package/gdt-server
+          dir=$(stack path --dist-dir)/build/gsd
+          [[ -e "$dir/gsd" ]] && cp "$dir/gsd" package/gsd
       - name: Upload artifact
         uses: actions/upload-artifact@v1
         with:
-          name: gdt-server
+          name: gsd
           path: package
