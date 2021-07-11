@@ -11,7 +11,6 @@ import Interpreter.Syntax.Common
 import Interpreter.Syntax.EvCore
 import Interpreter.Type
 import qualified Control.Monad.Writer as W (tell)
-import Interpreter.Printer (ppr)
 import Data.IORef
 import Data.Map.Strict (fromList)
 import Control.Monad.IO.Class (liftIO)

@@ -15,10 +15,29 @@ import qualified Interpreter as I
 import Interpreter.Parser (ParseError(ParseError))
 import qualified Data.Text as T
 
+class Printable a where
+  ppr :: a -> Text
+
+  needParens :: a -> Bool
+  needParens _ = False
+
+  maybeParens :: a -> Text
+  maybeParens x
+    | needParens x = parens $ ppr x
+    | otherwise    = ppr x
+
+parens :: Text -> Text
+parens x = "(" <> x <> ")"
 ascMaybeParens :: Printable a => a -> Text
 ascMaybeParens x
   | needParens x = "\\ascParens" <> braces (ppr x)
   | otherwise    = ppr x
+
+pprType :: Type -> Text
+pprType = ppr
+
+pprExpr :: Expr -> Text
+pprExpr = ppr
 
 braces :: Text -> Text
 braces x = "{" <> x <> "}"

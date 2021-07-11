@@ -4,15 +4,21 @@ module Cmd where
 import System.Console.CmdArgs
 import Interpreter.Syntax.Common
 
+data Format = Latex | Plain
+  deriving (Eq, Show, Data)
+
 data Cmd
   = Server { port :: Int }
-  | Eval { strategy :: Valid, file :: FilePath }
+  | Eval { strategy :: Valid, format :: Format, file :: FilePath }
   deriving (Data, Typeable, Show, Eq)
 
 evalCmd = Eval { strategy = enum [ Complete &= help "Complete strategy"
                                  , Exact &= help "Exact strategy"
                                  , Sound &= help "Sound strategy"
                                  ] &= groupname "Matching strategies"
+               , format = enum [ Plain &= help "Plain text"
+                               , Latex &= help "Latex formated"
+                               ] &= groupname "Output formats"
                , file = def &= typFile &= argPos 0
                }
 

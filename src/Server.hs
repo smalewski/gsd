@@ -11,8 +11,7 @@ import Servant.Server
 import Server.Api
 import Interpreter
 import Interpreter.Error (ErrorLevel(..), ErrorInfo(..))
-import Interpreter.Printer (Printable(ppr))
-import Interpreter.Printer.Latex
+import Interpreter.Printer.Latex (Printable(ppr))
 import Control.Monad.IO.Class (liftIO)
 import Data.Text (Text, unpack)
 import Data.Functor (($>))
