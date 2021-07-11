@@ -10,8 +10,6 @@ set -o errexit
 DEBIAN_FRONTEND=noninteractive
 export DEBIAN_FRONTEND
 
-apt-get update
-
 echo "Downloading stack"
 
 # Create directory tmp files

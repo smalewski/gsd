@@ -6,4 +6,4 @@ export PATH=$PATH:/home/vagrant/.local/bin
 
 stack install
 
-gsd --help
+echo "Done"
