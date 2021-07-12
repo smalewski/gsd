@@ -237,9 +237,9 @@ The syntax for expressions and declarations in GSD are as follows. Note that the
 
 |     |    |                                                                                |                                               |
 | --: | :-: | :----------------------------------------------------------------------------- | :-------------------------------------------- |
-| *n* | := | ... | \(-1\) | 0 | 1 | ...                                                     | Integer literals                              |
-| *s* | := | `"..."` | `'...'`                                                                | String literals                               |
-| *k* | := |  n | s                                                                      | Literals                                      |
+| *n* | := | ... &#124; \(-1\) &#124; 0 &#124; 1 &#124; ...                                                     | Integer literals                              |
+| *s* | := | `"..."` &#124; `'...'`                                                                | String literals                               |
+| *k* | := |  n &#124; s                                                                      | Literals                                      |
 | *c* | := |  [A-Z][a-zA-Z0-9]*                                                     | Constructor name                      |
 | *D* | := |  [A-Z][a-zA-Z0-9]*                                                     | Datatype name              |
 | *x* | := |  [a-z][a-zA-Z0-9]*                                                     | Identifier name            |
