@@ -10,40 +10,40 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-18.04, macos-10.15, windows-2019, ubuntu-latest, macOS-latest, windows-latest]
+        os: [ubuntu-18.04, macos-10.15, windows-2019]
     steps:
       - name: Checkout repo
         uses: actions/checkout@v2
 
       - name: Install stack (Windows)
         run: choco install haskell-stack
-        if: matrix.os == 'windows-2019' || matrix.os == 'windows-latest'
+        if: matrix.os == 'windows-2019'
 
       - name: Cache dependencies (Unix)
         uses: actions/cache@v1
-        if: matrix.os != 'windows-2019' && matrix.os != 'windows-latest'
+        if: matrix.os != 'windows-2019'
         with:
           path: ~/.stack
           key: ${{ runner.os }}-store-${{ hashFiles('stack.yaml.lock') }}-${{ hashFiles('gsd.cabal') }}
 
       - name: Cache dependencies (Windows)
         uses: actions/cache@v1
-        if: matrix.os == 'windows-2019' || matrix.os == 'windows-latest'
+        if: matrix.os == 'windows-2019'
         with:
           path: 'C:\Users\runneradmin\AppData\Roaming\stack'
           key: ${{ runner.os }}-store-${{ hashFiles('stack.yaml.lock') }}-${{ hashFiles('gsd.cabal') }}
 
       - name: Cache GHC (Windows)
         uses: actions/cache@v1
-        if: matrix.os == 'windows-2019' || matrix.os == 'windows-latest'
+        if: matrix.os == 'windows-2019'
         with:
           path: 'C:\Users\runneradmin\AppData\Local\Programs\stack'
           key: ghc-${{ hashFiles('stack.yaml.lock') }}
 
-      - name: Build generator
+      - name: Build GSD
         run:  stack build
 
-      - name: Package generator
+      - name: Package GSD
         shell: bash
         run: |
           mkdir package
