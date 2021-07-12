@@ -172,6 +172,7 @@ The syntax for expressions and declarations is as follows. Note that the syntax 
 |     |    | **`let`** *x*<sub>1</sub> **`=`** *e*<sub>1</sub> <br> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ... <br> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; *x*<sub>n</sub> **`=`** *e*<sub>n</sub> <br> **`in`** *e*<sub>0</sub> | Let binding                                   |
 | *p* | := |  *c* *x*<sub>1</sub> ... *x*<sub>n</sub>               | Constructor pattern |
 |  | |  `__`              | Default pattern |
+| *op* | := |  **`+`** &#124;  **`-`** &#124; **`*`** &#124; **`/`** &#124; **`==`**                                            | Operators        |
 | | | | |
 | *def* | := |  [ **`open`** &#124; **`closed`** ]? **`data`** *D* **`=`** C **<code> &#124; </code>** ... **<code> &#124; </code>** C<sub>n</sub> | Datatype definition |
 | *C* | := | *c* **`{`** *l*<sub>1</sub> **`:`** *T*<sub>1</sub> **`,`** ... **`,`** *l*<sub>n</sub> **`:`** *T*<sub>n</sub> **`}`** | Constructor definition |
