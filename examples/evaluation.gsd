@@ -1,3 +1,6 @@
+open data A
+open data B
+
 -- This should evaluate to 3
 (Foo {x = 2} ).x + 1
 
