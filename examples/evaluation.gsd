@@ -1,0 +1,5 @@
+-- This should evaluate to 3
+(Foo {x = 2} ).x + 1
+
+-- This should fail with a transitivity error between Int and ?D
+-- (Foo {x = 2}). : ?D

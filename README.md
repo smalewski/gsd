@@ -1,5 +1,16 @@
-GSD (Gradually Structured Data).
+# Introduction
 
+GSD is an interpreter for a gradually typed language
+with Gradually Structured Data.
+
+It's main features are the following:
+
+1. It can typecheck and evaluate programs with different levels of datatype definitions. 
+   From no definitions at all (for dynamic programs) to fully defined static programs,
+   and the levels in between those two extremes.
+   
+2. It works with three different matching strategies: sound, exact and complete.
+   
 # Installation
 
 There are two ways to install the GSD interpreter:
@@ -135,6 +146,51 @@ gsd server
 
 ### Running the web client
 
+# OOPSLA 2021 Artifact Evaluation
+
+## Claims to validate
+
+1. The evolution scenario from section 2 works as expected.
+2. Unclassified data interacts seamlessly with regular constructors.
+
+### Evolution scenario
+
+Files `bas-1.gsd`, `bas-2.gsd`, `bas-3.gsd`, and `bas-4.gsd`
+in `examples/` contain the different stages of the program
+evolution described in Section 2.
+
+To evaluate each of them you can use the `eval` command, as follows:
+```
+$ gsd eval examples/bas-1.gsd
+<String> "{"Success":{"r":3}}" : ? : ?
+```
+
+### Working with unclassified data
+
+So you can experiment with the interaction between unclassified data and regular constructors,
+we include a simple interactive example:
+a lambda calculus interpreter
+whose expressions are defined in an open datatype, `examples/lambda.gsd`.
+Here is an excerpt:
+
+```haskell
+open data Expr = Var {x : ?}
+               | Lambda {x : ?, e : Expr}
+               | App {e1 : Expr, e2 : Expr}
+
+eval env expr =
+  match expr with
+    Var x      => lookup x env
+    Lambda x e => Clos {x = x, expr = e, env = env}
+    App e1 e2  => let v1 = eval env e1
+                      v2 = eval env e2
+                   in (match v1 with
+                        Clos x ex envx => eval (insert envx x v2) ex
+                        _              => AppliedNonLambda {expr = v1})
+```
+
+Try adding new features to the interpreter, such as `Pairs`, without
+modifying the datatype definition. `pairs.gsd` shows a simple solution.
 
 # The language
 
@@ -179,8 +235,3 @@ The syntax for expressions and declarations is as follows. Note that the syntax 
 | *C* | := | *c* **`{`** *l*<sub>1</sub> **`:`** *T*<sub>1</sub> **`,`** ... **`,`** *l*<sub>n</sub> **`:`** *T*<sub>n</sub> **`}`** | Constructor definition |
 
 
-# OOPSLA 2021 Artifact Evaluation
-
-What can be reproduced from the GSD paper?
-
-- You should be able to run every example from the paper.
