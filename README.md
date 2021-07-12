@@ -188,10 +188,24 @@ To evaluate each of them you can use the `eval` command, as follows:
 $ gsd eval examples/bas-1.gsd
 <String> "{"Success":{"r":3}}" : ? : ?
 ```
+```
+$ gsd examples/bas-2.gsd
+<String> "{"Success":{"x":3}}" : String : String
+```
+```
+$ gsd examples/bas-3.gsd
+<String> "{"Success":{"x":3}}" : String : String
+```
+As expected, the above results differ only in their type annotations.
+The fourth step follows, adding just a wrapper around the arguments.
+```
+$ gsd examples/bas-4.gsd
+<String> "{"Success":{"x":{"N":{"x":3}}}}" : String : String
+```
 
 ### Working with unclassified data
 
-So you can experiment with the interaction between unclassified data and regular constructors,
+you can experiment with the interaction between unclassified data and regular constructors,
 we include a simple interactive example:
 a lambda calculus interpreter
 whose expressions are defined in an open datatype, `examples/lambda.gsd`.
@@ -214,13 +228,12 @@ eval env expr =
 ```
 
 Try adding new features to the interpreter, such as `Pairs`, without
-modifying the datatype definition. `pairs.gsd` shows a simple solution.
-
+modifying the datatype definition. `examples/pairs.gsd` shows a simple solution.
 
 
 # The language
 
-The syntax for expressions and declarations is as follows. Note that the syntax is indentation sensitive.
+The syntax for expressions and declarations in GSD are as follows. Note that the syntax is indentation sensitive.
 
 |     |    |                                                                                |                                               |
 | --: | :-: | :----------------------------------------------------------------------------- | :-------------------------------------------- |
