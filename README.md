@@ -232,7 +232,8 @@ eval env expr =
 ```
 
 Try adding new features to the interpreter, such as `Pairs`, without
-modifying the datatype definition. `examples/pairs.gsd` shows a simple solution.
+modifying the datatype definition. 
+A simple solution can be found in `examples/pairs.gsd`.
 
 ### Trace of execution (Section 4.3)
 
@@ -274,16 +275,18 @@ At each step, the sub-expression being evaluated is surrounded with double squar
 
 Only the first example is active, the second one is commented out.
 
-Uncomment the second example
+To try the second example remove the comment at the start of line 8 and
+run the interpreter again.
 ```
 -- This should evaluate to 3
 (Foo {x = 2} ).x + 1
 
 -- This should fail with a transitivity error between Int and ?D
-(Foo {x = 2}).x : ?D
+(Foo {x = 2}).x : ?D -- Uncomment this line
 ```
-and reevaluate the file. The interpreter will throw a
-transitivity error. There are no traces for errors.
+As expected, the interpreter throws a transitivity error, because
+`Int` is not a datatype. In its current form the GSD interpreter
+do not print traces for failed executions.
 ```
 $ gsd eval -w examples/evaluation.gsd
 
