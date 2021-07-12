@@ -90,23 +90,26 @@ Interpreter for the GSD language
 gsd [COMMAND] ... [OPTIONS]
 
 Common flags:
-  -? --help      Display help message
-  -V --version   Print version information
+  -? --help       Display help message
+  -V --version    Print version information
 
 gsd [eval] [OPTIONS] FILE
-  Evaluate source file.
+  Evaluate source file
 
+Flags:
+     --evaluate   Evaluate the program
+  -t --typecheck  Just typecheck
 Matching strategies:
-  -c --complete  Complete strategy
-  -e --exact     Exact strategy
-  -s --sound     Sound strategy
+  -c --complete   Complete strategy
+     --exact      Exact strategy
+  -s --sound      Sound strategy
 Output formats:
-  -p --plain     Plain text
-  -l --latex     Latex formated
+  -p --plain      Plain text
+  -l --latex      Latex formated
 
 gsd server [OPTIONS]
 
-  -p --port=NUM  Default port: 8001
+  -p --port=NUM   Default port: 8001
 
 ```
 
@@ -117,6 +120,10 @@ the file's name.
 ```
 $ gsd eval examples/bas-1.gsd
 ```
+
+By default the interpreter typechecks and evaluates programs.
+If the flag `-t` is present the interpreter will only typecheck
+the source file, returning the type of the last expression.
 
 Matching strategies can be selected using flags.
 The following command evaluates the contents of
@@ -208,6 +215,8 @@ eval env expr =
 
 Try adding new features to the interpreter, such as `Pairs`, without
 modifying the datatype definition. `pairs.gsd` shows a simple solution.
+
+
 
 # The language
 
