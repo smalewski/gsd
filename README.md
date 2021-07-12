@@ -277,7 +277,7 @@ Only the first example is active, the second one is commented out.
 
 To try the second example remove the comment at the start of line 8 and
 run the interpreter again.
-```
+```haskell
 -- This should evaluate to 3
 (Foo {x = 2} ).x + 1
 
