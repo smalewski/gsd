@@ -20,6 +20,8 @@ GSD is written in Haskell, so if you already have
 `stack` in your system, using GSD natively may be
 the easiest alternative.
 
+There is also a working online interpreter for GSD at [pleiad.cl/gsd](https://pleiad.cl/gsd).
+
 ## Building GSD natively
 
 To build the source code you need [`stack`](https://docs.haskellstack.org/en/stable/install_and_upgrade/)
@@ -70,7 +72,7 @@ $ git clone https://github.com/smalewski/gsd.git
 $ cd gsd
 $ ./build.sh
 ... [ a long build ] ...
-$ docker run -it gsd
+$ docker run -p 8001:8001 -it gsd
 ```
 
 The `gsd` executable should be in path.
@@ -143,8 +145,23 @@ start the web server.
 ```
 gsd server
 ```
+This server listens to port 8001 by default.
 
 ### Running the web client
+
+The easiest way of running the web client locally is
+via a Docker container.
+
+```
+# From the root of the repository
+$ cd web
+$ docker build -t gsd-web .
+... [ not that long build ] ...
+$ docker run -p 8000:80 gsd-web
+```
+
+You can now connect to the web client at `localhost:8000` using a web browser.
+
 
 # OOPSLA 2021 Artifact Evaluation
 
