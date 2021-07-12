@@ -131,7 +131,7 @@ To use the web client, you must first
 start the web server.
 ```
 gsd server
-``**
+```
 
 ### Running the web client
 
@@ -139,7 +139,6 @@ gsd server
 # The language
 
 The syntax for expressions and declarations is as follows. Note that the syntax is indentation sensitive.
-
 
 |     |    |                                                                                |                                               |
 | --: | :-: | :----------------------------------------------------------------------------- | :-------------------------------------------- |
