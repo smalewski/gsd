@@ -20,14 +20,25 @@ main = execCmd =<< runCmd --run 8001 app
 
 execCmd :: Cmd -> IO ()
 execCmd (Server port) = W.run port app
-execCmd (Eval Evaluate valid format filename) = do
+execCmd (Eval Evaluate WithTrace valid format filename) = do
+  src <- readFile filename
+  res <- run valid True src
+  printResult format res
+  printTrace format res
+execCmd (Eval Evaluate NoTrace valid format filename) = do
   src <- readFile filename
   res <- run valid False src
   printResult format res
-execCmd (Eval Typecheck valid format filename) = do
+execCmd (Eval Typecheck _ valid format filename) = do
   src <- readFile filename
   res <- check valid src
   printResult format res
+
+printTrace :: Printable a => Format -> Either OutError (Res a) -> IO ()
+printTrace fmt r@(Right (Res _ _ es)) = putStrLn "\n==BEGIN TRACE=="
+                                   *> mapM_ (putStrLn . ppr fmt) es
+                                   *> putStrLn "==END TRACE==\n"
+printTrace _ _ = pure ()
 
 printResult :: Printable a => Format -> Either OutError (Res a) -> IO ()
 printResult fmt (Left e) = putStrLn $ ppr fmt e

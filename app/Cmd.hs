@@ -7,7 +7,10 @@ import Interpreter.Printer (Format(..))
 
 data Cmd
   = Server { port :: Int }
-  | Eval { mode :: Mode, strategy :: Valid, format :: Format, file :: FilePath }
+  | Eval { mode :: Mode, trace :: Trace, strategy :: Valid, format :: Format, file :: FilePath }
+  deriving (Data, Typeable, Show, Eq)
+
+data Trace = WithTrace | NoTrace
   deriving (Data, Typeable, Show, Eq)
 
 data Mode = Evaluate | Typecheck
@@ -16,6 +19,9 @@ data Mode = Evaluate | Typecheck
 evalCmd = Eval { mode = enum [ Evaluate &= help "Evaluate the program"
                              , Typecheck &= help "Just typecheck"
                              ]
+               , trace  = enum [ NoTrace
+                               , WithTrace &= help "Print a trace of the execution"
+                               ]
                , strategy = enum [ Complete &= help "Complete strategy"
                                  , Exact &= help "Exact strategy"
                                  , Sound &= help "Sound strategy"

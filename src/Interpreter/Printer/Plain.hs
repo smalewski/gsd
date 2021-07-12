@@ -62,7 +62,7 @@ instance PrintablePlain CtorName where
   ppr (CtorName _ d) = d
 
 instance PrintablePlain DataName where
-  ppr (DataName _ d o) = d <> "_" <> ppr o
+  ppr (DataName _ d o) = d -- <> "_" <> ppr o
 
 instance PrintablePlain LabelName where
   ppr (LabelName _ d) = d

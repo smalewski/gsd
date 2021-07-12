@@ -57,7 +57,8 @@ eval trace env = removeDupSteps . evalEnvMIO env . go 0 . inject env
     go :: Int -> State -> EvalM Expr
     go n s@(e, _, k)
       | n > 1000 || isFinal s = tell [applyKont k e] $> applyKont k e
-      | otherwise             = step tell s >>= go (n + 1)
+      | otherwise             = tell [highlight k e] *> step tell s >>= go (n + 1)
+--      | otherwise             = step tell s >>= go (n + 1)
 
     removeDupSteps  = (fmap . fmap . fmap) removeDupSteps'
     removeDupSteps' (x:y:xs)
@@ -126,7 +127,7 @@ step tell (v0@(Value ev2 (Lit (LString txt)) _), env, k0@(KFun (Value ev1 FromJs
       Nothing -> err $ EFromJSON txt
       Just json -> do
         let v = Value ev' json t12
-        tell [highlight k0 v0, highlight k v]
+--        tell [highlight k0 v0, highlight k v]
         pure (v, env, k)
 
 -- ToJSON
@@ -138,7 +139,7 @@ step tell (v0@(Value ev2 u _), env, k0@(KFun (Value ev1 ToJson (TArr _ _ t12)) k
     ev' <- trans ev (Evidence ev12)
     let txt = decodeUtf8 . B.concat . toChunks $ encode u
         v = Value ev' (Lit $ LString txt) t12
-    tell [highlight k0 v0, highlight k v]
+--    tell [highlight k0 v0, highlight k v]
     pure (v, env, k)
 
 -- R-Beta
@@ -149,7 +150,7 @@ step tell (v0@(Value ev2 u _), _, k0@(KFun (Value ev1 (Clos x tx e env) (TArr _ 
     let v      = Value ev u tx
         newEnv = insertVar env x (Unboxed v)
         v'     = Asc (Evidence ev12) e t12
-    tell [highlight k0 v0, highlight k v']
+    --tell [highlight k0 v0, highlight k v']
     pure (v', newEnv, k)
 
 -- R-Delta
@@ -159,7 +160,7 @@ step tell (v0@(Value _ u2 _), env, k0@(KBinOpR bop (Value _ u1 _) k)) =
         ev = Evidence t
         u = evalBinOp bop u1 u2
         v' = Value ev u t
-    tell [highlight k0 v0, highlight k v']
+    --tell [highlight k0 v0, highlight k v']
     pure (v', env, k)
 
 -- R-AscErase
@@ -167,7 +168,7 @@ step tell (v0@(Value ev1 u _), _, k0@(KAsc ev2 t2 env k)) =
     do
       ev <- trans ev1 ev2
       let v' = Value ev u t2
-      tell [highlight k0 v0, highlight k v']
+      --tell [highlight k0 v0, highlight k v']
       pure (v', env, k)
 
 -- R-Match
@@ -177,7 +178,8 @@ step tell (v0@(Value _ (Ctor c args) _), _, k0@(KMatch cs env k)) =
       Just (Case p e) ->
         let xvs = zip (pvar p) (Unboxed . ctorArgExpr <$> args)
             newEnv = extendVarCtx env xvs
-        in  tell [highlight k0 v0, highlight k e] $> (e, newEnv, k)
+--        in  tell [highlight k0 v0, highlight k e] $> (e, newEnv, k)
+        in  pure (e, newEnv, k)
 
 -- R-Access
 step tell (v0@(Value _ (Ctor c args) _), _, k0@(KAccess l t' env k)) =
@@ -185,7 +187,7 @@ step tell (v0@(Value _ (Ctor c args) _), _, k0@(KAccess l t' env k)) =
       Just (CtorArg _ (Value evk uk _)) -> do
         ev' <- trans evk (Evidence t')
         let v' = Value ev' uk t'
-        tell [highlight k0 v0, highlight k v']
+        --tell [highlight k0 v0, highlight k v']
         pure (v', env, k)
       _ -> err $ EAccess c l
 
@@ -209,7 +211,7 @@ step tell (Var x@(Name _ name), env, k) = do
       | name == "fromJSON" -> pure FromJson
       | name == "toJSON"   -> pure ToJson
       | otherwise          -> err $ EVar x
-  tell [highlight k (Var x), highlight k v]
+  --tell [highlight k (Var x), highlight k v]
   pure (v, env, k)
 
 step _ (App e1 e2, env, k) =
