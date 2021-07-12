@@ -99,6 +99,9 @@ gsd [eval] [OPTIONS] FILE
 Flags:
      --evaluate   Evaluate the program
   -t --typecheck  Just typecheck
+  -n --notrace
+  -w --withtrace  Print a trace of the execution
+
 Matching strategies:
   -c --complete   Complete strategy
      --exact      Exact strategy
@@ -176,8 +179,9 @@ You can now connect to the web client at `localhost:8000` using a web browser.
 
 1. The evolution scenario from section 2 works as expected.
 2. Unclassified data interacts seamlessly with regular constructors.
+3. Correct trace of execution (Section 4.3).
 
-### Evolution scenario
+### Evolution scenario (Section 2)
 
 Files `bas-1.gsd`, `bas-2.gsd`, `bas-3.gsd`, and `bas-4.gsd`
 in `examples/` contain the different stages of the program
@@ -230,6 +234,61 @@ eval env expr =
 Try adding new features to the interpreter, such as `Pairs`, without
 modifying the datatype definition. `examples/pairs.gsd` shows a simple solution.
 
+### Trace of execution (Section 4.3)
+
+The evaluation examples can be found in `examples/evaluation.gsd`.
+To get a trace of execution, you should give the `-w` flag to
+the `eval` command.
+```
+$ gsd eval -w examples/evaluation.gsd
+```
+
+This should print the result of the execution plus its trace.
+```
+<Int> 3 : Int : Int
+
+==BEGIN TRACE==
+[[ (<Int> (<?O> Foo {x=<Int> (<Int> 2 : Int) : ?} : ?O).x : Int) + (<Int> 1 : Int) ]]
+[[ <Int> (<?O> Foo {x=<Int> (<Int> 2 : Int) : ?} : ?O).x : Int ]] + (<Int> 1 : Int)
+(<Int> [[ (<?O> Foo {x=<Int> (<Int> 2 : Int) : ?} : ?O).x ]] : Int) + (<Int> 1 : Int)
+(<Int> [[ <?O> Foo {x=<Int> (<Int> 2 : Int) : ?} : ?O ]].x : Int) + (<Int> 1 : Int)
+(<Int> (<?O> [[ Foo {x=<Int> (<Int> 2 : Int) : ?} ]] : ?O).x : Int) + (<Int> 1 : Int)
+(<Int> (<?O> Foo {x=[[ <Int> (<Int> 2 : Int) : ? ]]} : ?O).x : Int) + (<Int> 1 : Int)
+(<Int> (<?O> Foo {x=<Int> [[ <Int> 2 : Int ]] : ?} : ?O).x : Int) + (<Int> 1 : Int)
+(<Int> (<?O> Foo {x=<Int> (<Int> [[ 2 ]] : Int) : ?} : ?O).x : Int) + (<Int> 1 : Int)
+(<Int> (<?O> Foo {x=<Int> [[ <Int> 2 : Int ]] : ?} : ?O).x : Int) + (<Int> 1 : Int)
+(<Int> (<?O> Foo {x=[[ <Int> 2 : ? ]]} : ?O).x : Int) + (<Int> 1 : Int)
+(<Int> (<?O> [[ Foo {x=<Int> 2 : ?} ]] : ?O).x : Int) + (<Int> 1 : Int)
+(<Int> [[ <?O> Foo {x=<Int> 2 : ?} : ?O ]].x : Int) + (<Int> 1 : Int)
+(<Int> [[ <Int> 2 : ? ]] : Int) + (<Int> 1 : Int)
+[[ <Int> 2 : Int ]] + (<Int> 1 : Int)
+(<Int> 2 : Int) + [[ <Int> 1 : Int ]]
+(<Int> 2 : Int) + (<Int> [[ 1 ]] : Int)
+(<Int> 2 : Int) + [[ <Int> 1 : Int ]]
+<Int> 3 : Int
+==END TRACE==
+```
+
+To differentiate evidences from types in the plain output, evidences are surrounded by angle brackets (`<T>`).
+At each step, the sub-expression being evaluated is surrounded with double square brackets (`[[ e ]]`)`.
+
+Only the first example is active, the second one is commented out.
+
+Uncomment the second example
+```
+-- This should evaluate to 3
+(Foo {x = 2} ).x + 1
+
+-- This should fail with a transitivity error between Int and ?D
+(Foo {x = 2}).x : ?D
+```
+and reevaluate the file. The interpreter will throw a
+transitivity error. There are no traces for errors.
+```
+$ gsd eval -w examples/evaluation.gsd
+
+Consistent transitivity between Int and ?D is not defined.
+```
 
 # The language
 
