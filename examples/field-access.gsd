@@ -1,0 +1,16 @@
+-- Field access for closed datatypes works as expected,
+-- accesses to named parameters not present in the type are
+-- ruled out by the typecheker.
+
+data Closed = Foo {x : ?, y : Int} | Bar {x : ?, z : ?}
+
+-- (Foo 1 2).a -- This does not type check.
+-- (Foo 1 2).z -- But, they can still fail at runtime
+
+-- For open datatypes, things work differently, field access will
+-- always typecheck. The same goes for unclassified data.
+
+open data Open = Baz {x : ?}
+
+(Baz 1).y
+-- Fizz.bar -- This typecheks but fails at runtime, too.

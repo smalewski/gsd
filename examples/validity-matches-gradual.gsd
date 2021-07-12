@@ -1,0 +1,21 @@
+{-
+ - This example explores the different meanings for the validity
+ - of matches in a gradual program.
+ -}
+
+data A = A1 | A2
+data B = B1
+data C = C1
+
+match C1 : ?D with
+  A1 => 1  -- The match expression starts being only Sound with respect to A.
+
+  -- A2 => 2  -- After uncommenting this case the match expression will be Exact
+              -- with respect to A, and therefore Sound and Complete.
+              -- But unlike in the static example runtime match errors are still possible.
+
+  -- B1 => 3  -- After uncommenting this case and the one above, the match expression
+              -- will be Complete with respect to both A and B.
+              -- But, as in the case before, runtime match errors are still possible.
+
+-- Runtime match errors cannot be ruled out if the expression being matched has a gradual type.

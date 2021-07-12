@@ -1,0 +1,5 @@
+data Closed -- Datatypes are closed by default
+open data Open
+
+Foo : Open    -- This typechecks
+--Foo : Closed  -- This does not

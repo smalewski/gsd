@@ -9,6 +9,18 @@ lookup x env =
     Empty         => NotFound {var = x}
     Cons k v rest => if x == k then v else lookup x rest
 
+-- Removing any constructors
+-- definitions below.
+-- Everything keeps working
+-- as before, but with less precise types.
+
+open data Expr = Var {x : ?}
+               | Lambda {x : ?, e : Expr}
+               | App {e1 : Expr, e2 : Expr}
+
+-- Try extending this interpreter with Pairs, for example,
+-- without changing Expr's definition.
+
 eval env expr =
   match expr with
     Var x      => lookup x env
@@ -18,7 +30,7 @@ eval env expr =
                    in (match v1 with
                         Clos x ex envx => eval (insert envx x v2) ex
                         _              => AppliedNonLambda {expr = v1})
-    _ => expr
+
 
 -- \x => x
 id = Lambda { x = "x", e = Var { x = "x" } }

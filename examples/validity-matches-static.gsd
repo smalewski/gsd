@@ -1,0 +1,16 @@
+{-
+ - This example explores the different meanings for the validity
+ - of matches in a static program.
+ -}
+
+data A = A1 | A2
+data B = B1
+
+match A1 with
+  A1 => 1     -- The match expression starts being only Sound with respect to A.
+
+  -- A2 => 2  -- If you uncomment this case the match expression will be Exact
+              -- with respect to A, and therefore Sound and Complete.
+
+  -- B1 => 3  -- If you uncomment this case and the one above, the match expression
+              -- will be Complete with respect to both A and B.

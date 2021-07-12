@@ -120,13 +120,13 @@ serve '{"Plus": {"key": 10, "x": 1, "y": 2}}'
         title: "BAS Version 4",
         description: "Section 2. Figure 4.",
         body: `data Response = Success {x : Data} | Fail {msg : String}
-data Data = N {x : Int} | B {x : Bool}
+data Data = N {x : Int} | B {p : Bool}
 data Error = InvalidKeyError
            -- | IllFormedRequestError is no longer possible
            -- | MethodError {name : String} is no longer possible
 data Request = Plus {key : Int, x : Int, y : Int}
              | Minus {key : Int, x : Int, y : Int}
-             | Not {key : Int, x : Bool}
+             | Not {key : Int, p : Bool}
 
 serve : String -> String
 serve jsonReq = toJSON (handleRequest (fromJSON jsonReq))
@@ -190,6 +190,17 @@ lookup x env =
     Empty         => NotFound {var = x}
     Cons k v rest => if x == k then v else lookup x rest
 
+-- Remove any constructor definition below.
+-- Everything keeps working as before, but with less precise types.
+
+open data Expr = Var {x : ?}
+               | Lambda {x : ?, e : Expr}
+               | App {e1 : Expr, e2 : Expr}
+
+-- Try extending this interpreter with Pairs, or other feature,
+-- without changing Expr's definition.
+
+eval : Assoc -> Expr -> ?
 eval env expr =
   match expr with
     Var x      => lookup x env
@@ -199,7 +210,6 @@ eval env expr =
                    in (match v1 with
                         Clos x ex envx => eval (insert envx x v2) ex
                         _              => AppliedNonLambda {expr = v1})
-    _ => expr
 
 -- \\x => x
 id = Lambda { x = "x", e = Var { x = "x" } }
@@ -257,25 +267,6 @@ match C1 : ?D with
 -- Runtime match errors cannot be ruled out if the expression being matched has a gradual type.`
     },
     {
-        title: "Tutorial: Unclassified data",
-        description: "",
-        body: `-- Unclassified data does not need to be statically defined. But it needs to
--- be consistent in the number and name of its arguments.
--- This includes the number of arguments in a pattern.
--- Also, it cannot be instantiated positionally, only using record syntax.
-
-match (Foo {x = 1, y = "bar"}) with
-  Foo a b => b
-  -- Foo a => a  -- If this pattern replaces the one above the interpreter will complain
-                 -- since the arity of Foo will be ambiguous.
-
--- Foo {a = 2, y = 3} -- If this line is uncommented the interpreter will also complain,
-                      -- because the name of the parameters of Foo will be ambiguous.
-
--- Foo {x = Bar, y = 3} -- Changing the type of the arguments does not matter, since
-                        -- they are assumed to be of type ?.`
-    },
-    {
         title: "Unclassified data cannot inhabit a closed datatype",
         description: "",
         body: `data Closed -- Datatypes are closed by default
@@ -296,16 +287,13 @@ data Closed = Foo {x : ?, y : Int} | Bar {x : ?, z : ?}
 -- (Foo 1 2).a -- This does not type check.
 -- (Foo 1 2).z -- But, they can still fail at runtime
 
--- For open datatypes, things work differently. As long as
--- there is some unclassified data with the needed named
--- parameter the program will typecheck.
--- For convenience, the interpreter the interpreter creates dummy
--- constructors with the needed named parameter for each access
--- so a more dynamic approach is possible.
+-- For open datatypes, things work differently, field access will
+-- always typecheck. The same goes for unclassified data.
 
 open data Open = Baz {x : ?}
 
-(Baz 1).y`
+(Baz 1).y
+-- Fizz.bar -- This also typechecks but fails at runtime.`
     },
 
 ];
