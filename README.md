@@ -127,14 +127,56 @@ GSD has a web client that renders
 the LaTeX output and has syntax
 highlighting.
 
-To use that client, you must first
+To use the web client, you must first
 start the web server.
-
 ```
 gsd server
-```
+``**
 
 ### Running the web client
+
+
+# The language
+
+The syntax for expressions and declarations is as follows. Note that the syntax is indentation sensitive.
+
+
+|     |    |                                                                                |                                               |
+| --: | :-: | :----------------------------------------------------------------------------- | :-------------------------------------------- |
+| *n* | := | ... | \(-1\) | 0 | 1 | ...                                                     | Integer literals                              |
+| *s* | := | `"..."` | `'...'`                                                                | String literals                               |
+| *k* | := |  n | s                                                                      | Literals                                      |
+| *c* | := |  [A-Z][a-zA-Z0-9]*                                                     | Constructor name                      |
+| *D* | := |  [A-Z][a-zA-Z0-9]*                                                     | Datatype name              |
+| *x* | := |  [a-z][a-zA-Z0-9]*                                                     | Identifier name            |
+| *l* | := |  [a-z][a-zA-Z0-9]*                                                     | Label name                 |
+| *T* | := | **`?`**                                                                     | The unknown type                              |
+|     |    | **`?D`**                                                                 | The unknown datatype  |
+|     |    | **`?O`**                                                                 | The unknown open datatype |
+|     |    | *D*                                                             | Datatype |
+|     |    | **`Int`**                                                                   | Integer type                                  |
+|     |    | **`String`**                                                               | Boolean type                                  |
+|     |    | *T*<sub>1</sub> **`->`** *T*<sub>2</sub>                                       | Function type                                 |
+|     |    | **`(`** *T* **`)`**                                                            |                                               |
+| *e* | := | *x*                                                                            | Bound identifier                              |
+|     |    | *k*                                                                            | Literal                                       |
+|     |    | **`(`** *e* **`)`**                                                            | Parenthesis                                   |
+|     |    | *e* **`:`** *T*                                                                | Type ascription                               |
+|     |    | *c* *e*<sub>1</sub> ... *e*<sub>n</sub>                             | Positional constructor         |
+|     |    | *c* **`{`** *l*<sub>1</sub> **`=`** *e*<sub>1</sub> **`,`** ... **`,`** *l*<sub>n</sub> **`=`** *e*<sub>n</sub> **`}`** | Positional constructor         |
+|     |    | **`\`** *x* **`:`** *T* **`=>`** *e*                                        | Function                                      |
+|     |    | *e* **`.`** *l*                                         | Field access                       |
+|     |    | **`match`** *e*<sub>0</sub> **`with`** <br> &nbsp;&nbsp; *p*<sub>1</sub> **`=>`** *e*<sub>1</sub> <br> &nbsp;&nbsp; ... <br> &nbsp;&nbsp; *p*<sub>n</sub> **`=>`** *e*<sub>n</sub> | Conditional                                   |
+|     |    | *e*<sub>1</sub> *e*<sub>2</sub>                                                | Application                                   |
+|     |    | *e*<sub>1</sub> *op* *e*<sub>2</sub>                                     | Binary operations                     |
+|     |    | **`if`** *e*<sub>1</sub> <br> &nbsp;&nbsp; **`then`** *e*<sub>2</sub> <br> &nbsp;&nbsp; **`else`** *e*<sub>3</sub> | Conditional                                   |
+|     |    | **`let`** *x*<sub>1</sub> **`=`** *e*<sub>1</sub> <br> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ... <br> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; *x*<sub>n</sub> **`=`** *e*<sub>n</sub> <br> **`in`** *e*<sub>0</sub> | Let binding                                   |
+| *p* | := |  *c* *x*<sub>1</sub> ... *x*<sub>n</sub>               | Constructor pattern |
+|  | |  `__`              | Default pattern |
+| | | | |
+| *def* | := |  [ **`open`** &#124; **`closed`** ]? **`data`** *D* **`=`** C **<code> &#124; </code>** ... **<code> &#124; </code>** C<sub>n</sub> | Datatype definition |
+| *C* | := | *c* **`{`** *l*<sub>1</sub> **`:`** *T*<sub>1</sub> **`,`** ... **`,`** *l*<sub>n</sub> **`:`** *T*<sub>n</sub> **`}`** | Constructor definition |
+
 
 # OOPSLA 2021 Artifact Evaluation
 
