@@ -29,7 +29,7 @@ To build the source code you need [`stack`](https://docs.haskellstack.org/en/sta
 
 With stack installed, you only need to clone the
 repository and use `stack install`.
-The compiled binary will be in `.local/bin/gsd`.
+The compiled binary should be in `.local/bin/gsd`.
 
 ```
 $ git clone https://github.com/smalewski/gsd.git
