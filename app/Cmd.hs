@@ -1,16 +1,22 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 module Cmd where
 
-import System.Console.CmdArgs
+import System.Console.CmdArgs hiding (Mode)
 import Interpreter.Syntax.Common
 import Interpreter.Printer (Format(..))
 
 data Cmd
   = Server { port :: Int }
-  | Eval { strategy :: Valid, format :: Format, file :: FilePath }
+  | Eval { mode :: Mode, strategy :: Valid, format :: Format, file :: FilePath }
   deriving (Data, Typeable, Show, Eq)
 
-evalCmd = Eval { strategy = enum [ Complete &= help "Complete strategy"
+data Mode = Evaluate | Typecheck
+  deriving (Data, Typeable, Show, Eq)
+
+evalCmd = Eval { mode = enum [ Evaluate &= help "Evaluate the program"
+                             , Typecheck &= help "Just typecheck"
+                             ]
+               , strategy = enum [ Complete &= help "Complete strategy"
                                  , Exact &= help "Exact strategy"
                                  , Sound &= help "Sound strategy"
                                  ] &= groupname "Matching strategies"
@@ -22,11 +28,11 @@ evalCmd = Eval { strategy = enum [ Complete &= help "Complete strategy"
 
 serverCmd = Server { port = 8001 &= typ "NUM" &= help "Default port: 8001" }
 
-mode = cmdArgsMode $ modes [ evalCmd &= auto &= help "Evaluate source file."
+cmdMode = cmdArgsMode $ modes [ evalCmd &= auto &= help "Evaluate source file"
                            , serverCmd &= help "Launch interpreter in a web server"
                                        &= help ""]
      &= help ""
      &= program "gsd"
      &= summary "Interpreter for the GSD language"
 
-runCmd = cmdArgsRun mode
+runCmd = cmdArgsRun cmdMode
