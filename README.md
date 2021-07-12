@@ -164,6 +164,7 @@ The syntax for expressions and declarations is as follows. Note that the syntax 
 |     |    | *c* *e*<sub>1</sub> ... *e*<sub>n</sub>                             | Positional constructor         |
 |     |    | *c* **`{`** *l*<sub>1</sub> **`=`** *e*<sub>1</sub> **`,`** ... **`,`** *l*<sub>n</sub> **`=`** *e*<sub>n</sub> **`}`** | Positional constructor         |
 |     |    | **`\`** *x* **`:`** *T* **`=>`** *e*                                        | Function                                      |
+|     |    | **`\`** *x* **`=>`** *e*                                        | |
 |     |    | *e* **`.`** *l*                                         | Field access                       |
 |     |    | **`match`** *e*<sub>0</sub> **`with`** <br> &nbsp;&nbsp; *p*<sub>1</sub> **`=>`** *e*<sub>1</sub> <br> &nbsp;&nbsp; ... <br> &nbsp;&nbsp; *p*<sub>n</sub> **`=>`** *e*<sub>n</sub> | Conditional                                   |
 |     |    | *e*<sub>1</sub> *e*<sub>2</sub>                                                | Application                                   |
@@ -174,7 +175,7 @@ The syntax for expressions and declarations is as follows. Note that the syntax 
 |  | |  `__`              | Default pattern |
 | *op* | := |  **`+`** &#124;  **`-`** &#124; **`*`** &#124; **`/`** &#124; **`==`**                                            | Operators        |
 | | | | |
-| *def* | := |  [ **`open`** &#124; **`closed`** ]? **`data`** *D* **`=`** C **<code> &#124; </code>** ... **<code> &#124; </code>** C<sub>n</sub> | Datatype definition |
+| *def* | := |  [ **`open`** &#124; **`closed`** ]? **`data`** *D* **`=`** *C*<sub>1</sub> **<code> &#124; </code>** ... **<code> &#124; </code>** *C*<sub>n</sub> | Datatype definition |
 | *C* | := | *c* **`{`** *l*<sub>1</sub> **`:`** *T*<sub>1</sub> **`,`** ... **`,`** *l*<sub>n</sub> **`:`** *T*<sub>n</sub> **`}`** | Constructor definition |
 
 
