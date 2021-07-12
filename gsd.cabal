@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: a4f0ef868a6c0ef8b10e252a01704c5b12426e0cf9d39a8bd0f9f1b438b835e1
+-- hash: ca50602479eac9e376201251b0ee2099c471a11c9c5bcc904e69e60932cc5c42
 
 name:           gsd
 version:        0.1.0.0
@@ -15,6 +15,7 @@ author:         Stefan Malewski
 maintainer:     smalewsk@dcc.uchile.cl
 copyright:      2021 Stefan Malewski
 license:        GPL-3
+license-file:   LICENSE
 build-type:     Simple
 extra-source-files:
     README.md
