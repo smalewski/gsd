@@ -19,10 +19,10 @@ import Data.Maybe (fromMaybe)
 type CheckM = EnvM Identity Type () Error
 
 typecheck :: Valid -> Env Type -> Expr -> Either Error Type
-typecheck valid' env = fmap fst . evalEnvM env . typecheckExpr valid'
+typecheck valid' env = fst . evalEnvM env . typecheckExpr valid'
 
 wfEnv :: Env Type -> Either Error ()
-wfEnv env = void $ evalEnvM env wfTypeCtx
+wfEnv env = void . fst $ evalEnvM env wfTypeCtx
 
 typecheckExpr :: Valid -> Expr -> CheckM Type
 typecheckExpr _ (Var sp x) =

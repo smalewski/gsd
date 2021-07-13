@@ -34,12 +34,12 @@ execCmd (Eval Typecheck _ valid format filename) = do
   res <- check valid src
   printResult format res
 
-printTrace :: Printable a => Format -> Either OutError (Res a) -> IO ()
-printTrace fmt r@(Right (Res _ _ es)) = putStrLn "\n==BEGIN TRACE=="
-                                   *> mapM_ (putStrLn . ppr fmt) es
-                                   *> putStrLn "==END TRACE==\n"
-printTrace _ _ = pure ()
+printTrace :: Printable a => Format -> Res a -> IO ()
+printTrace fmt r = putStrLn "\n==BEGIN TRACE=="
+                 *> mapM_ (putStrLn . ppr fmt) (I.trace r)
+                 *> printResult fmt r
+                 *> putStrLn "==END TRACE==\n"
 
-printResult :: Printable a => Format -> Either OutError (Res a) -> IO ()
-printResult fmt (Left e) = putStrLn $ ppr fmt e
-printResult fmt (Right (Res e t _)) = putStrLn $ ppr fmt e <> " : " <> ppr fmt t
+printResult :: Printable a => Format -> Res a -> IO ()
+printResult fmt (Err e _) = putStrLn $ ppr fmt e
+printResult fmt (Res e t _) = putStrLn $ ppr fmt e <> " : " <> ppr fmt t

@@ -18,9 +18,9 @@ api = Proxy
 
 data Response
   = Ok    { val   :: Text, typ :: Text, steps :: [Text] }
-  | Warn  { title :: Text, msg :: Text   }
-  | Err   { title :: Text, msg :: Text   }
-  | PErr  { title :: Text, msg :: Text   }
+  | Warn  { title :: Text, msg :: Text, steps :: [Text] }
+  | Err   { title :: Text, msg :: Text, steps :: [Text] }
+  | PErr  { title :: Text, msg :: Text, steps :: [Text] }
   deriving (Eq, Show, Generic)
 instance ToJSON Response
 

@@ -23,7 +23,7 @@ import Control.Monad.Identity (Identity)
 type DesugarM = EnvM Identity Type () Error
 
 desugar :: Env Type -> Expr -> Either Error C.Expr
-desugar env = second fst . evalEnvM env . desugarExpr
+desugar env = fst . evalEnvM env . desugarExpr
 
 desugarExpr :: Expr -> DesugarM C.Expr
 desugarExpr (Var sp name) = pure $ C.Var sp name

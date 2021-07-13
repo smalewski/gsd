@@ -44,7 +44,7 @@ todata t
 -- * Translation function
 
 translate :: Env Type -> Expr -> Either Error Ev.Expr
-translate env = fmap (fst . fst) . evalEnvM env . translateExpr
+translate env = fmap fst . fst . evalEnvM env . translateExpr
 
 translateExpr :: Expr -> TransM (Ev.Expr, Type)
 translateExpr e | isValue e = do

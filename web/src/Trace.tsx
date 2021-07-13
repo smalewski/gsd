@@ -11,7 +11,7 @@ export interface Judgment {
 
 const Trace: React.FunctionComponent<{
     macros: () => object;
-    trace: Judgment[];
+    trace: string[];
 }> = (props): JSX.Element => {
 
 /**    const [currentPage, setCurrentPage] = useState(0); */

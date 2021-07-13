@@ -40,7 +40,7 @@ const useStyles = makeStyles((theme: Theme) => {
 
 const Editor: React.FC = (): JSX.Element => {
 
-    const emptyJudgment: Judgment = { expression: "", premises: [] };
+//    const emptyJudgment: Judgment = { expression: "", premises: [] };
 
     const [errorLevel, setErrorLevel] = useState(0);
     const [errorTitle, setErrorTitle] = useState("Error Title!");
@@ -49,7 +49,7 @@ const Editor: React.FC = (): JSX.Element => {
     const [textAlt, setTextAlt] = useState("");
     const [value, setValue] = useState("");
     const [type, setType] = useState("");
-    const [steps, setSteps] = useState([] as Judgment[]);
+    const [steps, setSteps] = useState([] as string[]);
     const [valid, setValid] = useState("Sound");
     const [example, setExample] = useState(0);
     const [showTrace, setShowTrace] = useState(false);
@@ -68,12 +68,11 @@ const Editor: React.FC = (): JSX.Element => {
     };
 
     const onReset = () => {
-        setTextAlt("0");
         setTextAlt("");
         setErrorLevel(0);
         setValue("");
         setType("");
-        setSteps([] as Judgment[]);
+        setSteps([] as string[]);
     }
 
     const handleExample = (event: React.ChangeEvent<{ value: unknown }>) => {
@@ -98,13 +97,13 @@ const Editor: React.FC = (): JSX.Element => {
         setShowTrace(checked);
     };
 
-    const showError = (data: { title: string, msg: string }, level: number) => {
+    const showError = (data: { title: string, msg: string, steps: string[] }, level: number) => {
         setErrorTitle(data.title);
         setErrorMsg(data.msg);
         setErrorLevel(level);
+        setSteps(data.steps);
         setValue("");
         setType("");
-        setSteps([] as Judgment[]);
     }
 
     const onRun = (isEval: boolean) => {
@@ -114,7 +113,7 @@ const Editor: React.FC = (): JSX.Element => {
             body: JSON.stringify({ "sourceCode": text, "valid": valid, "trace": showTrace })
         };
 
-//        fetch("http://pleiad.cl/gsd/api/" + (isEval ? "eval" : "check"), requestOptions)
+//        fetch("https://pleiad.cl/gsd/api/" + (isEval ? "eval" : "check"), requestOptions)
 //        fetch("https://gsd.cybre.dev:8900/gsd/api/" + (isEval ? "eval" : "check"), requestOptions)
         fetch("http://localhost:8001/gsd/api/" + (isEval ? "eval" : "check"), requestOptions)
             .then(async res => {
@@ -142,13 +141,13 @@ const Editor: React.FC = (): JSX.Element => {
                         showError(data, 3);
                         break;
                     default:
-                        showError({ title: "Unknown error!", msg: "" }, 4);
+                        showError({ title: "Unknown error!", msg: "", steps: [] }, 4);
                         break;
                 }
             }
             )
             .catch(_error => {
-                showError({ title: "Server is down!", msg: "" }, 4);
+                showError({ title: "Server is down!", msg: "", steps: [] }, 4);
             });
     }
 

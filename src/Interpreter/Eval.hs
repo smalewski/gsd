@@ -51,7 +51,7 @@ type CtorArgValue = CtorArg
 
 type EvalM = EnvM IO Value [Expr] Error
 
-eval :: Bool -> Env Value -> Expr -> IO (Either Error (Expr, [Expr]))
+eval :: Bool -> Env Value -> Expr -> IO (Either Error Expr, [Expr])
 eval trace env = removeDupSteps . evalEnvMIO env . go 0 . inject env
   where
     go :: Int -> State -> EvalM Expr
@@ -60,7 +60,7 @@ eval trace env = removeDupSteps . evalEnvMIO env . go 0 . inject env
       | otherwise             = tell [highlight k e] *> step tell s >>= go (n + 1)
 --      | otherwise             = step tell s >>= go (n + 1)
 
-    removeDupSteps  = (fmap . fmap . fmap) removeDupSteps'
+    removeDupSteps  = (fmap . fmap) removeDupSteps'
     removeDupSteps' (x:y:xs)
       | x == y    = x : removeDupSteps' xs
       | otherwise = x : removeDupSteps' (y : xs)
@@ -81,14 +81,14 @@ initValEnv trace env funs konst = do
 
   pure valEnv
 
-cicleEval :: Bool -> Env Value -> (Name, Value) -> IO (Either Error ())
-cicleEval _ _ (_, Unboxed _) = pure $ pure ()
+cicleEval :: Bool -> Env Value -> (Name, Value) -> IO (Either Error (), [Expr])
+cicleEval _ _ (_, Unboxed _) = pure (Right (), [])
 cicleEval trace env (_, Boxed box) = do
   v  <- readIORef box
-  eith <- eval trace env v
+  (eith, acc) <- eval trace env v
   case eith of
-    Left err'     -> pure $ Left err'
-    Right (v', _) -> pure <$> writeIORef box v'
+    Left err'     -> pure (Left err', acc)
+    Right v' -> writeIORef box v' $> (Right (), acc)
 
 highlight :: Kont -> Expr -> Expr
 highlight k = applyKont k . Highlight

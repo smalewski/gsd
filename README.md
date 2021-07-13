@@ -284,13 +284,30 @@ run the interpreter again.
 -- This should fail with a transitivity error between Int and ?D
 (Foo {x = 2}).x : ?D -- Uncomment this line
 ```
-As expected, the interpreter throws a transitivity error, because
-`Int` is not a datatype. In its current form the GSD interpreter
-do not print traces for failed executions.
+As expected, the interpreter throws a runtime type error.
+`Int` is not consistent with `?D` (i.e., is not a datatype).
+The last ascription can not be reduced and fails.
 ```
 $ gsd eval -w examples/evaluation.gsd
 
 Consistent transitivity between Int and ?D is not defined.
+
+==BEGIN TRACE==
+[[ <?D> (<?O> Foo {x=<Int> (<Int> 2 : Int) : ?} : ?O).x : ?D ]]
+<?D> [[ (<?O> Foo {x=<Int> (<Int> 2 : Int) : ?} : ?O).x ]] : ?D
+<?D> [[ <?O> Foo {x=<Int> (<Int> 2 : Int) : ?} : ?O ]].x : ?D
+<?D> (<?O> [[ Foo {x=<Int> (<Int> 2 : Int) : ?} ]] : ?O).x : ?D
+<?D> (<?O> Foo {x=[[ <Int> (<Int> 2 : Int) : ? ]]} : ?O).x : ?D
+<?D> (<?O> Foo {x=<Int> [[ <Int> 2 : Int ]] : ?} : ?O).x : ?D
+<?D> (<?O> Foo {x=<Int> (<Int> [[ 2 ]] : Int) : ?} : ?O).x : ?D
+<?D> (<?O> Foo {x=<Int> [[ <Int> 2 : Int ]] : ?} : ?O).x : ?D
+<?D> (<?O> Foo {x=[[ <Int> 2 : ? ]]} : ?O).x : ?D
+<?D> (<?O> [[ Foo {x=<Int> 2 : ?} ]] : ?O).x : ?D
+<?D> [[ <?O> Foo {x=<Int> 2 : ?} : ?O ]].x : ?D
+<?D> [[ <Int> 2 : ? ]] : ?D
+Consistent transitivity between Int and ?D is not defined.
+==END TRACE==
+
 ```
 
 # The language

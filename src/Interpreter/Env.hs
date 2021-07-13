@@ -33,22 +33,23 @@ data Env a = Env
   deriving (Eq, Show, Functor)
 
 newtype EnvM bot env acc err a = EnvM
-  { runEnvM :: ReaderT (Env env) (WriterT acc  (ExceptT err bot)) a
+--  { runEnvM :: ReaderT (Env env) (WriterT acc  (ExceptT err bot)) a
+  { runEnvM :: ReaderT (Env env) (ExceptT err (WriterT acc bot)) a
   }
   deriving (Functor, Applicative, Monad, MonadReader (Env env), MonadWriter acc, MonadError err, MonadIO)
 
-evalEnvM :: Env env -> EnvM Identity env acc err a -> Either err (a, acc)
+evalEnvM :: Env env -> EnvM Identity env acc err a -> (Either err a, acc)
 evalEnvM env
   = runIdentity
-  . runExceptT
   . runWriterT
+  . runExceptT
   . flip runReaderT env
   . runEnvM
 
-evalEnvMIO :: Env env -> EnvM IO env acc err a -> IO (Either err (a, acc))
+evalEnvMIO :: Env env -> EnvM IO env acc err a -> IO (Either err a, acc)
 evalEnvMIO env
-  = runExceptT
-  . runWriterT
+  = runWriterT
+  . runExceptT
   . flip runReaderT env
   . runEnvM
 
