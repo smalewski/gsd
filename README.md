@@ -35,6 +35,7 @@ The compiled binary should be in `.local/bin/gsd`.
 $ git clone https://github.com/smalewski/gsd.git
 $ cd gsd
 $ stack install
+... [ a long build ] ...
 ```
 
 ## Building GSD in a Vagrant VM
@@ -147,7 +148,7 @@ the ones presented in the paper.
 ## Web server
 
 GSD has a web client that renders
-the LaTeX output and has syntax
+the LaTeX output nicely into HTML and has syntax
 highlighting.
 
 To use the web client, you must first
@@ -209,8 +210,8 @@ $ gsd examples/bas-4.gsd
 
 ### Working with unclassified data
 
-you can experiment with the interaction between unclassified data and regular constructors,
-we include a simple interactive example:
+You can experiment with the interaction between unclassified data and regular constructors.
+We include a simple example that is a good place to start experimenting:
 a lambda calculus interpreter
 whose expressions are defined in an open datatype, `examples/lambda.gsd`.
 Here is an excerpt:
@@ -271,7 +272,7 @@ This should print the result of the execution plus its trace.
 ```
 
 To differentiate evidences from types in the plain output, evidences are surrounded by angle brackets (`<T>`).
-At each step, the sub-expression being evaluated is surrounded with double square brackets (`[[ e ]]`)`.
+At each step, the sub-expression being evaluated is surrounded with double square brackets (`[[ e ]]`).
 
 Only the first example is active, the second one is commented out.
 
