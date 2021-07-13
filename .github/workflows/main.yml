@@ -50,6 +50,7 @@ jobs:
           dir=$(stack path --dist-dir)/build/gsd
           [[ -e "$dir/gsd" ]] && cp "$dir/gsd" package/gsd
           [[ -e "$dir/gsd.exe" ]] && cp "$dir/gsd.exe" package/gsd.exe
+          cd .
 
       - name: Upload artifact
         uses: actions/upload-artifact@v1
