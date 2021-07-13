@@ -35,7 +35,7 @@ const Trace: React.FunctionComponent<{
                     <Card className="expression-card" key={`traceCard${index}`}>
                         <CardContent>
                             <TeX settings={{ macros: props.macros() }} block>
-                                {step.expression}
+                                {step}
                             </TeX>
                         </CardContent>
                     </Card>
