@@ -151,17 +151,12 @@ GSD has a web client that renders
 the LaTeX output nicely into HTML and has syntax
 highlighting.
 
-To use the web client, you must first
-start the web server.
-```
-gsd server
-```
-This server listens to port 8001 by default.
+The server has two parts: a JSON-based web API (part of the `gsd` executable) and a user interface shim run in nginx (in the `web/` directory, and packaged as a Docker container).
 
 ### Running the web client
 
 The easiest way of running the web client locally is
-via a Docker container.
+via a Docker container. We've provisioned a container that wraps up the JSON API in a simple user interface.
 
 ```
 # From the root of the repository
@@ -173,6 +168,13 @@ $ docker run -p 8000:80 gsd-web
 
 You can now connect to the web client at `localhost:8000` using a web browser.
 
+### Running just the standalone API
+
+To start the interpreter's web API, run:
+```
+gsd server
+```
+This server listens to port 8001 by default; use the `-p` flag to configure it.
 
 # OOPSLA 2021 Artifact Evaluation
 
@@ -277,7 +279,7 @@ At each step, the sub-expression being evaluated is surrounded with double squar
 Only the first example is active, the second one is commented out.
 
 To try the second example remove the comment at the start of line 8 and
-run the interpreter again.
+run the interpreter again. (You don't need to comment out the first line---GSD will only evaluate the last expression.)
 ```haskell
 -- This should evaluate to 3
 (Foo {x = 2} ).x + 1
