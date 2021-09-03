@@ -21,43 +21,54 @@ import qualified Data.Map.Strict as Map
 import Data.Bifunctor (first)
 import Data.Functor (($>))
 import Text.Megaparsec.Char (newline)
+import qualified Data.Set as S
 
 dataDefinitionP :: Parser (DataName, DataInfo, [(CtorName, CtorInfo)])
-dataDefinitionP = withLineFold $ do
-  o  <- withDefault Closed openessP
-  void $ keyword "data"
-  d  <- lexeme dataNameP
-  try (dataCtorsP d o) <|> emptyDataP d o
+dataDefinitionP = do
+  i <- getOffset
+  region (handleError i) $ do
+    o <- try $ do
+      o' <- withDefault Closed openessP
+      void $ keyword "data"
+      pure o'
+    d  <- lexeme dataNameP <?> "datatype identifier"
+    dataCtorsP d o <|> emptyDataP d o
   where
     dataCtorsP d o = do
       void . lexeme' $ char '='
-      let sep = try (whitespace' *> lexeme' (char '|'))
-      cs <- sepBy ctorDefinitionP sep
+      let sep = whitespace' *> lexeme' (char '|')
+      cs <- sepBy ctorDefinitionP sep <?> "constructor definition"
       let cnames = fst <$> cs
+      when (S.size (S.fromList cnames) /= length cnames) (customFailure $ EDupCtor d)
       pure (setOpeness o d, DataInfo cnames, cs)
 
     emptyDataP d o = pure (setOpeness o d, DataInfo [], [])
 
+    handleError _ e@TrivialError{} = e
+    handleError i e@(FancyError _ _) = setErrorOffset i e
+
 ctorDefinitionP :: Parser (CtorName, CtorInfo)
-ctorDefinitionP = do
+ctorDefinitionP = label "constructor definition" $ do
   c <- ctorNameP
-  try (argsP c) <|> emptyArgsP c
+  argsP c <|> emptyArgsP c
   where
-    argsP c = do
-      whitespace'
+    argsP c = label argsLabel $ do
+    --  whitespace'
       void . lexeme' $ char '{'
-      args <- sepBy argDefinitionP (lexeme' $ char ',')
+      args <- sepBy argDefinitionP' (lexeme' $ char ',')
       void $ char '}'
       pure (c, CtorInfo args)
-
     emptyArgsP c = pure (c, CtorInfo [])
+    argsLabel = "field definitions (<label> : <type> , ... , <label> : <type>)"
+    argDefinitionP' = argDefinitionP <?> "field definition (<label> : <type>)"
 
 argDefinitionP :: Parser (LabelName, Type)
-argDefinitionP = sameLine $ do
-  l <- lexeme' labelNameP
-  void . lexeme' $  char ':'
-  t <- Type.parser
-  pure (l, t)
+argDefinitionP =
+  sameLine $ do
+    l <- lexeme' labelNameP
+    void . lexeme' $  char ':'
+    t <- Type.parser
+    pure (l, t)
 
 openessP :: Parser Openess
 openessP = openP <|> closedP

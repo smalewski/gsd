@@ -42,6 +42,7 @@ type ParseResult = Either ParseError
 data Error = EArity CtorName
            | ELabels CtorName
            | EPosUnclass CtorName
+           | EDupCtor DataName
            | EFunType Type
            | ETopLevel Span
            | EFunVars Name
@@ -52,6 +53,7 @@ instance HasSpan Error where
   span (EArity c) = span c
   span (ELabels c) = span c
   span (EPosUnclass c) = span c
+  span (EDupCtor d) = span d
   span (EFunType t) = span t
   span (ETopLevel s) = s
   span (EFunVars x) = span x
@@ -69,6 +71,8 @@ instance ShowErrorComponent Error where
     = "Inconsistent labels in constructor."
   showErrorComponent (EPosUnclass c)
     = "Unclassified data cannot be instantiated positionally."
+  showErrorComponent (EDupCtor d)
+    = "Duplicated constructor definition in the definition of " <> show d <> "."
   showErrorComponent (EFunType t)
     = "Type in declaration is not consistent with arrow."
   showErrorComponent (ETopLevel _)

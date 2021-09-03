@@ -24,16 +24,20 @@ import Data.Functor (($>))
 
 typeDeclP :: Parser (Name, Type)
 typeDeclP = do
-  name <- nameP
-  void $ txt ":"
+  name <- try $ do
+    name' <- nameP
+    void $ txt ":"
+    pure name'
   ty   <- Type.parser
   pure (name, ty)
 
 funDeclP :: Parser (Name, [Name], Expr)
 funDeclP = do
-  name <- nameP
-  xs   <- some nameP
-  void $ txt "="
+  (name, xs) <- try $ do
+    name' <- nameP
+    xs'   <- some nameP
+    void $ txt "="
+    pure (name', xs')
   maybe pass (customFailure . EFunVars) $ getDuplicate xs
   withLineFold $ do
     e <- Expr.parser
@@ -41,8 +45,10 @@ funDeclP = do
 
 constDeclP :: Parser (Name, Expr)
 constDeclP = do
-  name <- nameP
-  void $ txt "="
+  name <- try $ do
+    name' <- nameP
+    void $ txt "="
+    pure name'
   withLineFold $ do
     e <- Expr.parser
     pure (name, e)

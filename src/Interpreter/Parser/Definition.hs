@@ -22,9 +22,9 @@ data Def
   | Raw Expr
 
 parser :: Parser [Def]
-parser = many (topLevel defP) <* whitespace <* eof
+parser = manyTill (topLevel defP) (hidden eof)
   where
-    defP = dataDefP <|> try typeDefP <|> try constDefP <|> try funDefP <|> rawP
+    defP = dataDefP <|> typeDefP <|> constDefP <|> funDefP <|> rawP
 
 dataDefP :: Parser Def
 dataDefP = do
